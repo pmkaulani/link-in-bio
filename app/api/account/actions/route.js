@@ -41,8 +41,19 @@ export async function POST(req) {
     // 1. Change Password
     if (action === 'change_password') {
       const { newPassword } = body;
-      if (!newPassword || newPassword.length < 6) {
-        return NextResponse.json({ error: 'New password must be at least 6 characters.' }, { status: 400 });
+      const isValid =
+        newPassword &&
+        newPassword.length >= 8 &&
+        /[A-Z]/.test(newPassword) &&
+        /[a-z]/.test(newPassword) &&
+        /[0-9]/.test(newPassword) &&
+        /[^A-Za-z0-9]/.test(newPassword);
+
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Password must be at least 8 characters and contain uppercase, lowercase, numbers, and special symbols.' },
+          { status: 400 }
+        );
       }
 
       if (!isLocalMode) {

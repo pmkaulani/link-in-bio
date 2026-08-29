@@ -71,7 +71,7 @@ export default function LoginPage() {
       </header>
 
       {/* Main Split Container */}
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start flex-1">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start flex-1">
         {/* Left Side: Live Animated Preview */}
         <div className="hidden lg:flex lg:col-span-6 flex-col items-center justify-center pt-1">
           <div className="w-full max-w-[360px] text-left mb-3.5">
@@ -89,8 +89,8 @@ export default function LoginPage() {
           <AuthLivePreview mode="login" username="peter.dev" displayName="Peter Kaulani" vibe="minimal" />
         </div>
 
-        {/* Right Side: Login Form (Lowered) */}
-        <div className="lg:col-span-6 flex justify-center lg:pt-14">
+        {/* Right Side: Login Form (Lowered on Mobile) */}
+        <div className="lg:col-span-6 flex justify-center pt-8 sm:pt-12 lg:pt-14">
           <div className="w-full max-w-md">
             <form
               onSubmit={handleSubmit}

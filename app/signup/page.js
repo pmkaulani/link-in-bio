@@ -17,6 +17,7 @@ import {
 import GoogleAuthButton from '../../components/GoogleAuthButton';
 import BrandLogo from '../../components/BrandLogo';
 import AuthLivePreview from '../../components/auth/AuthLivePreview';
+import { APP_DOMAIN } from '../../lib/constants';
 
 const RESERVED_HANDLES = new Set([
   'admin', 'administrator', 'superadmin', 'support', 'help', 'security',
@@ -120,18 +121,24 @@ function SignupForm() {
     return () => clearTimeout(timer);
   }, [username]);
 
+  // Professional password checks
+  const passwordChecks = {
+    length: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasLower: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+  const isPasswordValid = Object.values(passwordChecks).every(Boolean);
+
   // Password strength calculator
   function getPasswordStrength(pwd) {
     if (!pwd) return { score: 0, label: '', color: 'bg-zinc-200' };
-    let score = 0;
-    if (pwd.length >= 6) score += 1;
-    if (pwd.length >= 8) score += 1;
-    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score += 1;
-    if (/[0-9]/.test(pwd) || /[^A-Za-z0-9]/.test(pwd)) score += 1;
+    const passedCount = Object.values(passwordChecks).filter(Boolean).length;
 
-    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-amber-500' };
-    if (score <= 3) return { score: 2, label: 'Good', color: 'bg-blue-500' };
-    return { score: 3, label: 'Strong', color: 'bg-black' };
+    if (passedCount <= 2) return { score: 1, label: 'Weak', color: 'bg-amber-500' };
+    if (passedCount <= 4) return { score: 2, label: 'Good', color: 'bg-blue-500' };
+    return { score: 3, label: 'Strong & Secure', color: 'bg-emerald-600' };
   }
 
   const pwdStrength = getPasswordStrength(password);
@@ -148,6 +155,11 @@ function SignupForm() {
 
     if (userStatus && userStatus.available === false) {
       setError('Please choose an available username.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      setError('Password must meet all security standards: 8+ characters, uppercase, lowercase, number, and special character.');
       return;
     }
 
@@ -283,7 +295,7 @@ function SignupForm() {
                 {transitionStep === 3 && 'Your page is ready!'}
               </h2>
               <p className="text-xs text-zinc-400 font-medium">
-                link-in-bio.com/{username || 'you'}
+                {APP_DOMAIN}/{username || 'you'}
               </p>
             </div>
 
@@ -334,10 +346,10 @@ function SignupForm() {
         </div>
       </header>
 
-      {/* Main Split Section - Starts Immediately Under Header */}
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start flex-1">
-        {/* Left Side: Elegant Single-Column Form */}
-        <div className="lg:col-span-6 flex justify-center">
+      {/* Main Split Section */}
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start flex-1">
+        {/* Left Side: Elegant Single-Column Form (Lowered on mobile) */}
+        <div className="lg:col-span-6 flex justify-center pt-8 sm:pt-12 lg:pt-14">
           <div className="w-full max-w-md">
             <form
               onSubmit={handleSubmit}
@@ -392,7 +404,7 @@ function SignupForm() {
                   }`}
                 >
                   <span className="pl-4 text-xs font-bold text-zinc-400 select-none">
-                    linkinbio.com/
+                    {APP_DOMAIN}/
                   </span>
                   <input
                     type="text"
@@ -476,7 +488,7 @@ function SignupForm() {
                 />
               </div>
 
-              {/* 5. Password */}
+              {/* 5. Professional Password with Requirements */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500">
@@ -484,7 +496,7 @@ function SignupForm() {
                   </label>
                   {password.length > 0 && (
                     <span className="text-[10px] font-bold text-zinc-500">
-                      Strength: {pwdStrength.label}
+                      {pwdStrength.label}
                     </span>
                   )}
                 </div>
@@ -495,7 +507,7 @@ function SignupForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     className={`${inputClass} pr-10`}
                   />
                   <button
@@ -507,6 +519,42 @@ function SignupForm() {
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+
+                {/* Live Password Security Checklist */}
+                {password.length > 0 && (
+                  <div className="mt-2.5 rounded-lg border border-zinc-200 bg-white p-2.5 text-[11px] text-zinc-600 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.length ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {passwordChecks.length ? '✓' : '•'}
+                      </span>
+                      <span className={passwordChecks.length ? 'text-black font-semibold' : 'text-zinc-500'}>8+ characters</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasUpper ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {passwordChecks.hasUpper ? '✓' : '•'}
+                      </span>
+                      <span className={passwordChecks.hasUpper ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 uppercase letter (A–Z)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasLower ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {passwordChecks.hasLower ? '✓' : '•'}
+                      </span>
+                      <span className={passwordChecks.hasLower ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 lowercase letter (a–z)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasNumber ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {passwordChecks.hasNumber ? '✓' : '•'}
+                      </span>
+                      <span className={passwordChecks.hasNumber ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 number (0–9)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasSpecial ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {passwordChecks.hasSpecial ? '✓' : '•'}
+                      </span>
+                      <span className={passwordChecks.hasSpecial ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 special symbol (!@#$...)</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}

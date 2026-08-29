@@ -20,6 +20,7 @@ import {
   AlertOctagon,
   AlertTriangle,
 } from 'lucide-react';
+import { APP_DOMAIN } from '../../../lib/constants';
 
 const TABS = [
   { id: 'account', label: 'Account', icon: User },
@@ -39,7 +40,7 @@ export default function SettingsPage() {
   // Account tab states
   const [usernameInput, setUsernameInput] = useState(profile?.username || '');
   const [displayNameInput, setDisplayNameInput] = useState(profile?.display_name || '');
-  const [emailInput, setEmailInput] = useState(profile?.email || 'creator@linkinbio.com');
+  const [emailInput, setEmailInput] = useState(profile?.email || '');
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState('');
 
@@ -163,8 +164,15 @@ export default function SettingsPage() {
       showToast('New passwords do not match.');
       return;
     }
-    if (newPassword.length < 6) {
-      showToast('Password must be at least 6 characters.');
+    const passwordChecks = {
+      length: newPassword.length >= 8,
+      hasUpper: /[A-Z]/.test(newPassword),
+      hasLower: /[a-z]/.test(newPassword),
+      hasNumber: /[0-9]/.test(newPassword),
+      hasSpecial: /[^A-Za-z0-9]/.test(newPassword),
+    };
+    if (!Object.values(passwordChecks).every(Boolean)) {
+      showToast('Password must be 8+ chars and include uppercase, lowercase, numbers, and special symbols.');
       return;
     }
 
@@ -436,11 +444,11 @@ export default function SettingsPage() {
             <form onSubmit={handleSaveUsername} className="p-4 rounded-[8px] bg-zinc-50 border border-zinc-200 space-y-2">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Username / Handle</span>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Your public bio link: linkinbio.com/{profile?.username || 'yourname'}</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Your public bio link: {APP_DOMAIN}/{profile?.username || 'yourname'}</p>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
                 <div className="flex flex-1 items-center rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 focus-within:border-black shadow-xs">
-                  <span className="text-xs font-bold text-zinc-400 select-none">linkinbio.com/</span>
+                  <span className="text-xs font-bold text-zinc-400 select-none">{APP_DOMAIN}/</span>
                   <input
                     type="text"
                     value={usernameInput}
@@ -600,6 +608,26 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+
+            {newPassword.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${newPassword.length >= 8 ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                  {newPassword.length >= 8 ? '✓' : '•'} 8+ chars
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[A-Z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                  {/[A-Z]/.test(newPassword) ? '✓' : '•'} Uppercase (A-Z)
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[a-z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                  {/[a-z]/.test(newPassword) ? '✓' : '•'} Lowercase (a-z)
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                  {/[0-9]/.test(newPassword) ? '✓' : '•'} Number (0-9)
+                </span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[^A-Za-z0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                  {/[^A-Za-z0-9]/.test(newPassword) ? '✓' : '•'} Symbol (!@#$)
+                </span>
+              </div>
+            )}
 
             <div className="pt-1">
               <button
@@ -849,7 +877,7 @@ export default function SettingsPage() {
                   {isProfileDisabled ? 'Profile is currently Disabled' : 'Disable Public Profile'}
                 </span>
                 <span className="block text-[11px] text-zinc-500 mt-0.5">
-                  Temporarily unpublishes <code className="font-bold text-black">linkinbio.com/{profile?.username}</code>. You can re-enable anytime.
+                  Temporarily unpublishes <code className="font-bold text-black">{APP_DOMAIN}/{profile?.username}</code>. You can re-enable anytime.
                 </span>
               </div>
               <button

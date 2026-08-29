@@ -17,6 +17,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
+import { APP_DOMAIN } from '../../lib/constants';
 
 const STEPS = [
   { label: 'Profile', desc: 'Identity & handle' },
@@ -305,7 +306,7 @@ export default function OnboardingPage() {
                 <span className={labelClass}>Username</span>
                 <div className="mt-1.5 flex items-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-xs focus-within:border-black">
                   <span className="bg-zinc-100 border-r border-zinc-200 px-3.5 py-3 text-xs font-bold text-zinc-500 select-none">
-                    linkinbio.com/
+                    {APP_DOMAIN}/
                   </span>
                   <input
                     type="text"
@@ -536,7 +537,7 @@ export default function OnboardingPage() {
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-black">Your canvas is ready</h1>
                 <p className="mt-1 text-sm font-bold text-zinc-600">
-                  linkinbio.com/{username || 'you'}
+                  {APP_DOMAIN}/{username || 'you'}
                 </p>
               </div>
 

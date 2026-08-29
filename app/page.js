@@ -43,6 +43,7 @@ import AnimatedCounter from '../components/landing/AnimatedCounter';
 import ScrollProgress from '../components/landing/ScrollProgress';
 import HeroLiveProfile from '../components/landing/HeroLiveProfile';
 import HeroTaglineCarousel from '../components/landing/HeroTaglineCarousel';
+import { APP_DOMAIN } from '../lib/constants';
 
 // ── Interactive Themes for Showcase ──────────────────────────────────────────
 const SHOWCASE_THEMES = [
@@ -303,7 +304,7 @@ export default function Home() {
     },
     {
       q: 'Does it work across Instagram, TikTok, WhatsApp, and YouTube?',
-      a: 'Yes. Your custom URL (linkinbio.com/yourname) works seamlessly in the bio field of any social platform, messaging app, email signature, or digital business card.',
+      a: `Yes. Your custom URL (${APP_DOMAIN}/yourname) works seamlessly in the bio field of any social platform, messaging app, email signature, or digital business card.`,
     },
     {
       q: 'How does Trust & Safety protect my audience?',
@@ -385,7 +386,7 @@ export default function Home() {
                 className="flex items-center rounded-[8px] border border-zinc-800 bg-zinc-950 p-1.5 transition focus-within:border-white/40"
               >
                 <span className="pl-3.5 text-xs sm:text-sm font-bold text-zinc-500 select-none">
-                  linkinbio.com/
+                  {APP_DOMAIN}/
                 </span>
                 <input
                   name="username"
@@ -1128,7 +1129,7 @@ export default function Home() {
             <span className="font-mono text-xs font-bold text-zinc-500">01</span>
             <h3 className="text-lg font-black text-white">Claim Your Handle</h3>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Pick your unique personal username at <code className="text-white">linkinbio.com/yourname</code> in 10 seconds.
+              Pick your unique personal username at <code className="text-white">{APP_DOMAIN}/yourname</code> in 10 seconds.
             </p>
           </div>
 
@@ -1169,7 +1170,7 @@ export default function Home() {
             className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-2.5 max-w-md mx-auto px-4"
           >
             <div className="flex items-center rounded-[8px] border border-zinc-800 bg-zinc-900 px-3.5 py-3 w-full">
-              <span className="text-xs font-bold text-zinc-500 select-none">linkinbio.com/</span>
+              <span className="text-xs font-bold text-zinc-500 select-none">{APP_DOMAIN}/</span>
               <input
                 type="text"
                 value={demoHandle}
@@ -1307,7 +1308,7 @@ export default function Home() {
                 <li><Link href="/privacy" className="hover:text-white transition">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-white transition">Terms of Service</Link></li>
                 <li><Link href="/terms#safety" className="hover:text-white transition">Trust & Safety Policy</Link></li>
-                <li><a href="mailto:support@linkinbio.com" className="hover:text-white transition">Report Content Abuse</a></li>
+                <li><a href="mailto:pmkaulani@gmail.com" className="hover:text-white transition">Report Content Abuse</a></li>
               </ul>
             </div>
           </div>

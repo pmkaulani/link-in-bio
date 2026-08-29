@@ -26,7 +26,11 @@ import {
   FileWarning,
   HelpCircle,
   Megaphone,
+  Link2,
+  Contrast,
+  Download,
 } from 'lucide-react';
+import { APP_DOMAIN } from '../../lib/constants';
 
 const FONT_MAP = {
   inter: "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -218,7 +222,7 @@ function ClaimUsernameModal({ profile, isOpen, onClose }) {
 
             <form onSubmit={handleClaim} className="mt-5 flex flex-col gap-2.5">
               <div className="flex items-center rounded-2xl bg-zinc-900 border border-zinc-800 px-3.5 py-3 shadow-inner">
-                <span className="text-xs font-bold text-zinc-500 select-none">linkinbio.com/</span>
+                <span className="text-xs font-bold text-zinc-500 select-none">{APP_DOMAIN}/</span>
                 <input
                   type="text"
                   value={claimHandle}
@@ -500,7 +504,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
   if (!isOpen) return null;
 
   const creatorName = profile?.display_name || `@${profile?.username || 'creator'}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(pageUrl)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=${encodeURIComponent(pageUrl)}`;
   const shareTitle = `Check out ${creatorName}'s profile on Link-in-Bio`;
 
   function copyLink() {
@@ -509,6 +513,58 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     }
+  }
+
+  function downloadQrWithBadge() {
+    const canvas = document.createElement('canvas');
+    const size = 600;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Background and QR code
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 24, 24, size - 48, size - 48);
+
+      // Centered dark badge with rounded corners
+      const badgeSize = 130;
+      const badgeX = (size - badgeSize) / 2;
+      const badgeY = (size - badgeSize) / 2;
+      const radius = 28;
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      // Draw interlocking link chains
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 11;
+      ctx.lineCap = 'round';
+
+      // Left link loop
+      ctx.beginPath();
+      ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
+      ctx.stroke();
+
+      // Right link loop
+      ctx.beginPath();
+      ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
+      ctx.stroke();
+
+      const link = document.createElement('a');
+      link.download = `${profile?.username || 'link-in-bio'}-qr.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = qrUrl;
   }
 
   function handleShareChannel(type) {
@@ -560,15 +616,33 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
         <div className="mt-4 rounded-3xl bg-zinc-50/80 p-6 text-center border border-zinc-200/80 shadow-md flex flex-col items-center">
           {showQr ? (
             <div className="flex flex-col items-center">
-              <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 shadow-xs">
-                <img src={qrUrl} alt="QR code" className="h-32 w-32 object-contain" />
+              {/* QR Code Container with Centered App Icon Badge */}
+              <div className="relative overflow-hidden rounded-3xl border-2 border-black bg-black p-3.5 shadow-2xl">
+                <img src={qrUrl} alt="QR code" className="h-44 w-44 rounded-2xl object-contain bg-white p-1.5" />
+                
+                {/* Apps Interlocking Link Icon in the Middle */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-2xl bg-black border-2 border-white shadow-2xl">
+                  <Link2 size={20} className="text-white" strokeWidth={2.8} />
+                </div>
               </div>
-              <button
-                onClick={() => setShowQr(false)}
-                className="mt-2 text-xs font-bold text-zinc-500 hover:text-black underline"
-              >
-                Show profile preview
-              </button>
+
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={downloadQrWithBadge}
+                  className="flex items-center gap-1.5 rounded-full bg-black px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95"
+                >
+                  <Download size={13} />
+                  <span>Save QR image</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQr(false)}
+                  className="text-xs font-bold text-zinc-500 hover:text-black underline"
+                >
+                  Show card preview
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -589,7 +663,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
               </h4>
 
               <p className="mt-0.5 text-xs font-mono font-bold text-zinc-400">
-                linkinbio.com/{profile?.username}
+                {APP_DOMAIN}/{profile?.username}
               </p>
 
               {profile?.bio && (
@@ -600,10 +674,10 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
 
               <button
                 onClick={() => setShowQr(true)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-bold text-zinc-700 hover:bg-zinc-100 shadow-xs"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3.5 py-1.5 text-[11px] font-bold text-zinc-700 hover:bg-zinc-100 shadow-xs"
               >
-                <QrCode size={12} />
-                <span>Show QR code</span>
+                <QrCode size={13} />
+                <span>Show QR badge</span>
               </button>
             </>
           )}
@@ -1140,6 +1214,7 @@ export default function PublicProfile({ profile, blocks }) {
   const [reportTarget, setReportTarget] = useState('');
   const [reportTargetBlockId, setReportTargetBlockId] = useState(null);
   const [activeShareLink, setActiveShareLink] = useState(null);
+  const [inverted, setInverted] = useState(false);
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
@@ -1193,8 +1268,13 @@ export default function PublicProfile({ profile, blocks }) {
   return (
     <div className="min-h-screen w-full bg-[#18181B] flex items-center justify-center p-0 sm:p-6 md:p-10">
       <main
-        className="link-page relative w-full sm:max-w-[580px] min-h-screen sm:min-h-[850px] sm:rounded-[36px] overflow-hidden px-5 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between shadow-2xl"
-        style={{ ...getBackground(profile || {}), color: text, fontFamily: font }}
+        className="link-page relative w-full sm:max-w-[580px] min-h-screen sm:min-h-[850px] sm:rounded-[36px] overflow-hidden px-5 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
+        style={{
+          ...getBackground(profile || {}),
+          color: text,
+          fontFamily: font,
+          filter: inverted ? 'invert(1) hue-rotate(180deg)' : 'none',
+        }}
         onMouseMove={profile?.cursor_glow !== 'none' ? handleMove : undefined}
       >
         <BackgroundEffects effect={profile?.bg_effect || 'none'} primary={primary} />
@@ -1226,14 +1306,29 @@ export default function PublicProfile({ profile, blocks }) {
               <BrandLogo size="sm" variant="text" theme="current" />
             </button>
 
-            <button
-              onClick={() => setShareOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/20 backdrop-blur-md transition hover:scale-110 shadow-sm"
-              style={{ color: text }}
-              title="Share profile"
-            >
-              <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Monochrome Inversion Toggle */}
+              <button
+                type="button"
+                onClick={() => setInverted((prev) => !prev)}
+                className="flex h-8 items-center gap-1.5 rounded-full border border-current/20 bg-white/20 px-2.5 text-[11px] font-bold backdrop-blur-md transition hover:scale-105 active:scale-95 shadow-sm"
+                style={{ color: text }}
+                title="Toggle monochrome high-contrast inversion"
+                aria-label="Toggle monochrome contrast"
+              >
+                <Contrast size={13} />
+                <span className="text-[10px] uppercase tracking-wider font-extrabold">{inverted ? 'Normal' : 'Invert'}</span>
+              </button>
+
+              <button
+                onClick={() => setShareOpen(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/20 backdrop-blur-md transition hover:scale-110 shadow-sm"
+                style={{ color: text }}
+                title="Share profile"
+              >
+                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+              </button>
+            </div>
           </div>
 
           {/* Profile Avatar */}

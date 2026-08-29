@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { MoveUpRight, Radio, Play } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { ICONS } from '../../lib/icons';
+import { APP_DOMAIN } from '../../lib/constants';
 
 const VIBE_CONFIGS = {
   minimal: {
@@ -201,7 +202,7 @@ export default function AuthLivePreview({
               {displayName || 'Your Name'}
             </h2>
             <span className="text-xs font-semibold opacity-75 mt-0.5 truncate max-w-[240px]">
-              link-in-bio.com/{cleanHandle}
+              {APP_DOMAIN}/{cleanHandle}
             </span>
 
             {/* Socials Bar */}

@@ -30,10 +30,20 @@ export default function ResetPasswordPage() {
     });
   }, []);
 
+  // Professional password checks
+  const passwordChecks = {
+    length: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasLower: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+  const isPasswordValid = Object.values(passwordChecks).every(Boolean);
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (!isPasswordValid) {
+      setError('Password must meet all security standards: 8+ characters, uppercase, lowercase, number, and special character.');
       return;
     }
     if (password !== confirm) {
@@ -97,7 +107,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className={`${inputClass} pr-10`}
               />
               <button
@@ -108,6 +118,42 @@ export default function ResetPasswordPage() {
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+
+            {/* Live Password Security Checklist */}
+            {password.length > 0 && (
+              <div className="mt-2.5 rounded-lg border border-zinc-200 bg-white p-2.5 text-[11px] text-zinc-600 space-y-1 text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.length ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                    {passwordChecks.length ? '✓' : '•'}
+                  </span>
+                  <span className={passwordChecks.length ? 'text-black font-semibold' : 'text-zinc-500'}>8+ characters</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasUpper ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                    {passwordChecks.hasUpper ? '✓' : '•'}
+                  </span>
+                  <span className={passwordChecks.hasUpper ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 uppercase letter (A–Z)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasLower ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                    {passwordChecks.hasLower ? '✓' : '•'}
+                  </span>
+                  <span className={passwordChecks.hasLower ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 lowercase letter (a–z)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasNumber ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                    {passwordChecks.hasNumber ? '✓' : '•'}
+                  </span>
+                  <span className={passwordChecks.hasNumber ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 number (0–9)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-3.5 w-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${passwordChecks.hasSpecial ? 'bg-emerald-600 text-white' : 'bg-zinc-200 text-zinc-500'}`}>
+                    {passwordChecks.hasSpecial ? '✓' : '•'}
+                  </span>
+                  <span className={passwordChecks.hasSpecial ? 'text-black font-semibold' : 'text-zinc-500'}>At least 1 special symbol (!@#$...)</span>
+                </div>
+              </div>
+            )}
           </label>
 
           <label className="block">

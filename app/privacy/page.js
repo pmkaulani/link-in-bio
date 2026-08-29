@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import BrandLogo from '../../components/BrandLogo';
 import { Lock, ArrowLeft } from 'lucide-react';
-import { PRIVACY_EMAIL } from '../../lib/constants';
+import { PRIVACY_EMAIL, APP_DOMAIN } from '../../lib/constants';
 
 export const metadata = {
   title: 'Privacy Policy — Link-in-Bio',
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
 
           <Section title="3. Public Profile Transparency">
             <p>
-              Your public Link-in-Bio page (<span className="font-mono text-white bg-zinc-900 px-1 py-0.5 rounded">linkinbio.com/username</span>) is designed to be accessible to visitors worldwide. Content you publish on your profile is visible to anyone visiting your link. Private account details (such as login email, passwords, and security tokens) are never displayed publicly.
+              Your public Link-in-Bio page (<span className="font-mono text-white bg-zinc-900 px-1 py-0.5 rounded">{APP_DOMAIN}/username</span>) is designed to be accessible to visitors worldwide. Content you publish on your profile is visible to anyone visiting your link. Private account details (such as login email, passwords, and security tokens) are never displayed publicly.
             </p>
           </Section>
 

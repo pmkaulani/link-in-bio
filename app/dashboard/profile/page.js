@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useDashboard } from '../DashboardContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
-import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
+import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2 } from 'lucide-react';
+import { APP_DOMAIN } from '../../../lib/constants';
 
 const SOCIALS = ['instagram', 'youtube', 'tiktok', 'facebook', 'twitter', 'linkedin', 'spotify', 'telegram', 'whatsapp'];
 
@@ -135,7 +136,7 @@ function CustomDomainCard({ profile, userId }) {
             <Globe size={16} className="text-black" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Custom Domain</h2>
           </div>
-          <p className="mt-1 text-xs text-zinc-400">Use your own domain instead of linkinbio.com/{profile?.username}.</p>
+          <p className="mt-1 text-xs text-zinc-400">Use your own domain instead of {APP_DOMAIN}/{profile?.username}.</p>
         </div>
         {domainRow && (
           <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${domainRow.verified ? 'bg-zinc-100 text-black' : 'bg-zinc-100 text-zinc-600'}`}>
@@ -211,7 +212,7 @@ function ShareCard({ username }) {
   if (!username) return null;
 
   const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${username}` : `/${username}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(pageUrl)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=${encodeURIComponent(pageUrl)}`;
 
   function copyLink() {
     navigator.clipboard.writeText(pageUrl).then(() => {
@@ -220,15 +221,66 @@ function ShareCard({ username }) {
     });
   }
 
+  function downloadQrWithBadge() {
+    const canvas = document.createElement('canvas');
+    const size = 600;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 24, 24, size - 48, size - 48);
+
+      const badgeSize = 130;
+      const badgeX = (size - badgeSize) / 2;
+      const badgeY = (size - badgeSize) / 2;
+      const radius = 28;
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 11;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
+      ctx.stroke();
+
+      const link = document.createElement('a');
+      link.download = `${username}-qr-code.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = qrUrl;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-6 text-center border-t border-zinc-200">
-      <div className="overflow-hidden rounded-[4px] border border-zinc-200 bg-white p-2 shadow-xs">
-        <img src={qrUrl} alt={`QR code for ${pageUrl}`} className="h-32 w-32 object-contain" />
+      <div className="relative overflow-hidden rounded-2xl border-2 border-black bg-black p-3 shadow-xl">
+        <img src={qrUrl} alt={`QR code for ${pageUrl}`} className="h-36 w-36 rounded-xl object-contain bg-white p-1" />
+        {/* Centered App Logo Badge */}
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl bg-black border-2 border-white shadow-2xl">
+          <Link2 size={18} className="text-white" strokeWidth={2.8} />
+        </div>
       </div>
       <div className="max-w-md">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Share your page</h2>
         <p className="mt-1 break-all text-sm font-bold text-black">{pageUrl}</p>
-        <p className="mt-1 text-xs text-zinc-500">Scan the code or copy the link to share your profile anywhere.</p>
+        <p className="mt-1 text-xs text-zinc-500">Scan the badge code or copy the link to share your profile anywhere.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <button
             onClick={copyLink}
@@ -237,19 +289,20 @@ function ShareCard({ username }) {
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copied' : 'Copy link'}
           </button>
-          <a
-            href={qrUrl}
-            download={`${username}-qr-code.png`}
-            className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-bold text-black transition hover:bg-zinc-100"
+          <button
+            type="button"
+            onClick={downloadQrWithBadge}
+            className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-black px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800"
           >
             <Download size={13} />
             Download QR
-          </a>
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default function ProfilePage() {
   const { profile, userId, updateProfile, loading } = useDashboard();
