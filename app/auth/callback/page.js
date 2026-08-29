@@ -89,8 +89,12 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // 6. First time signing in with Google — create initial starter profile
-        const base = slugify(user.email?.split('@')[0] || user.user_metadata?.full_name);
+        // 6. First time signing in / email confirmation — create initial profile
+        const base = slugify(
+          user.user_metadata?.username ||
+          user.email?.split('@')[0] ||
+          user.user_metadata?.full_name
+        );
         let username = base;
         let profileCreated = false;
 
@@ -98,20 +102,20 @@ export default function AuthCallbackPage() {
           const { error: err } = await supabase.from('profiles').insert({
             id: user.id,
             username,
-            display_name: user.user_metadata?.full_name || base,
+            display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || base,
             avatar_url: user.user_metadata?.avatar_url || '',
-            theme: 'growth',
+            theme: user.user_metadata?.theme || 'growth',
             onboarded: true,
           });
 
-          if (!err) {
+          if (!err || err.code === '23505') {
             profileCreated = true;
             break;
           }
           username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
-        // Even if insert had a non-fatal warning, proceed to dashboard
+        // Proceed to dashboard
         router.push('/dashboard');
       } catch (err) {
         console.error('[auth/callback] Unexpected error:', err);

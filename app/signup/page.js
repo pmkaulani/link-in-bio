@@ -220,28 +220,40 @@ function SignupForm() {
 
     setLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: cleanUsername,
+          display_name: displayName.trim() || cleanUsername,
+          theme: vibe,
+        },
+      },
+    });
+
     if (signUpError) {
       setError(friendlyAuthError(signUpError));
       setLoading(false);
       return;
     }
 
-    const userId = data.user?.id;
-    if (!userId) {
+    // If email confirmation is required, session is null — wait for user confirmation
+    if (!data?.session) {
       setCheckEmail(true);
       setLoading(false);
       return;
     }
 
+    // Authenticated session exists — safely insert profile with valid auth.uid()
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: userId,
+      id: data.session.user.id,
       username: cleanUsername,
       display_name: displayName.trim() || cleanUsername,
       theme: vibe,
     });
 
-    if (profileError) {
+    if (profileError && profileError.code !== '23505') {
       setError(
         profileError.message.includes('duplicate') ? 'That username is taken.' : profileError.message
       );
@@ -249,15 +261,10 @@ function SignupForm() {
       return;
     }
 
-    if (data.session) {
-      setTransitionStep(1);
-      setTimeout(() => setTransitionStep(2), 600);
-      setTimeout(() => setTransitionStep(3), 1200);
-      setTimeout(() => router.push('/dashboard'), 1800);
-    } else {
-      setCheckEmail(true);
-      setLoading(false);
-    }
+    setTransitionStep(1);
+    setTimeout(() => setTransitionStep(2), 600);
+    setTimeout(() => setTransitionStep(3), 1200);
+    setTimeout(() => router.push('/dashboard'), 1800);
   }
 
   if (checkEmail) {
