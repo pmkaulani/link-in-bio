@@ -124,6 +124,26 @@ export default function SettingsPage() {
     setTimeout(() => setToastMsg(''), 3500);
   }
 
+  // ── Helper: Authenticated API caller ──────────────────────────────────────
+  async function callAccountAction(body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (isSupabaseConfigured) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      } catch (err) {
+        console.error('Failed to retrieve session token for action:', err);
+      }
+    }
+    return fetch('/api/account/actions', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+  }
+
   // ── 1. Account Handlers ───────────────────────────────────────────────────
   async function handleSaveUsername(e) {
     e.preventDefault();
@@ -135,11 +155,7 @@ export default function SettingsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/account/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_username', username: clean }),
-      });
+      const res = await callAccountAction({ action: 'update_username', username: clean });
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to update username.');
@@ -193,11 +209,7 @@ export default function SettingsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/account/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'change_password', oldPassword, newPassword }),
-      });
+      const res = await callAccountAction({ action: 'change_password', oldPassword, newPassword });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to change password.');
 
@@ -221,11 +233,7 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const nextState = !is2FAEnabled;
-      await fetch('/api/account/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle_2fa', enabled: nextState }),
-      });
+      await callAccountAction({ action: 'toggle_2fa', enabled: nextState });
 
       setIs2FAEnabled(nextState);
       updateProfile({ two_factor_enabled: nextState });
@@ -247,11 +255,7 @@ export default function SettingsPage() {
   async function handleSignOutEverywhere() {
     if (!confirm('Are you sure you want to sign out of all other devices?')) return;
     setSessions((prev) => prev.filter((s) => s.isCurrent));
-    await fetch('/api/account/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sign_out_everywhere' }),
-    });
+    await callAccountAction({ action: 'sign_out_everywhere' });
     showToast('Signed out of all other devices.');
   }
 
@@ -266,11 +270,7 @@ export default function SettingsPage() {
 
     updateProfile(updates);
 
-    await fetch('/api/account/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_privacy', ...updates }),
-    });
+    await callAccountAction({ action: 'update_privacy', ...updates });
 
     showToast('Privacy preferences updated.');
   }
@@ -320,11 +320,7 @@ export default function SettingsPage() {
     if (!confirm('Purge all historical views and click analytics for your profile? This cannot be undone.')) return;
     setLoading(true);
     try {
-      await fetch('/api/account/actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'purge_analytics' }),
-      });
+      await callAccountAction({ action: 'purge_analytics' });
       showToast('Analytics events purged.');
     } catch (err) {
       showToast('Failed to purge analytics.');
@@ -339,11 +335,7 @@ export default function SettingsPage() {
     setIsProfileDisabled(nextState);
     updateProfile({ is_disabled: nextState });
 
-    await fetch('/api/account/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_privacy', is_disabled: nextState }),
-    });
+    await callAccountAction({ action: 'update_privacy', is_disabled: nextState });
 
     showToast(nextState ? 'Profile unpublished and disabled.' : 'Profile republished.');
   }
@@ -355,11 +347,7 @@ export default function SettingsPage() {
     setIsAccountDeactivated(nextState);
     updateProfile({ is_deactivated: nextState });
 
-    await fetch('/api/account/actions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_privacy', is_deactivated: nextState }),
-    });
+    await callAccountAction({ action: 'update_privacy', is_deactivated: nextState });
 
     showToast(nextState ? 'Account deactivated.' : 'Account reactivated.');
   }
@@ -372,7 +360,14 @@ export default function SettingsPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/account/delete', { method: 'POST' });
+      const headers = {};
+      if (isSupabaseConfigured) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      }
+      const res = await fetch('/api/account/delete', { method: 'POST', headers });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Deletion failed.');
 

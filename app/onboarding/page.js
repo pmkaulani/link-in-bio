@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { THEME_PRESETS, QUICK_SOCIALS } from '../../lib/presets';
@@ -15,6 +15,7 @@ import {
   Clock,
   Layers,
   Smartphone,
+  Upload,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 import { APP_DOMAIN } from '../../lib/constants';
@@ -62,11 +63,7 @@ const STARTER_LOOKS = [
   },
 ];
 
-const AVATAR_PRESETS = [
-  { label: 'Portrait', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80' },
-  { label: 'Creator', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=160&h=160&q=80' },
-  { label: 'Minimal', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&h=160&q=80' },
-];
+
 
 function Stepper({ currentStep }) {
   return (
@@ -127,6 +124,8 @@ export default function OnboardingPage() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Theme & Effects data — defaults to Minimal starter look
   const [theme, setTheme] = useState(STARTER_LOOKS[0].theme);
@@ -166,6 +165,46 @@ export default function OnboardingPage() {
       setLoading(false);
     });
   }, [router]);
+
+  async function handleAvatarFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Validate file type and size (max 2MB)
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) return;
+
+    setAvatarUploading(true);
+    try {
+      if (isSupabaseConfigured && userId) {
+        // Upload to Supabase storage
+        const ext = file.name.split('.').pop();
+        const path = `avatars/${userId}.${ext}`;
+        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        if (!error) {
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+          setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
+        } else {
+          // Fallback to data URL if storage isn't set up
+          const reader = new FileReader();
+          reader.onload = () => setAvatarUrl(reader.result);
+          reader.readAsDataURL(file);
+        }
+      } else {
+        // Local mode — use data URL
+        const reader = new FileReader();
+        reader.onload = () => setAvatarUrl(reader.result);
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      // Fallback to data URL on any error
+      const reader = new FileReader();
+      reader.onload = () => setAvatarUrl(reader.result);
+      reader.readAsDataURL(file);
+    }
+    setAvatarUploading(false);
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   function toggleSocial(social) {
     setSelectedSocials((prev) => {
@@ -297,7 +336,7 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Avatar Box with Presets */}
+              {/* Profile Photo Upload */}
               <div className="flex flex-col sm:flex-row items-center gap-4 rounded-[8px] bg-zinc-50 p-4 border border-zinc-200">
                 <div className="relative shrink-0">
                   {avatarUrl ? (
@@ -317,28 +356,27 @@ export default function OnboardingPage() {
                     </button>
                   )}
                 </div>
-                <div className="flex-1 w-full space-y-1 text-center sm:text-left">
+                <div className="flex-1 w-full space-y-2 text-center sm:text-left">
                   <span className={labelClass}>Profile Photo</span>
+                  {/* Hidden file input */}
                   <input
-                    type="url"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="Paste image URL..."
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-black placeholder:text-zinc-400 focus:border-black focus:outline-none"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarFile}
+                    className="hidden"
                   />
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase">Presets:</span>
-                    {AVATAR_PRESETS.map((p) => (
-                      <button
-                        key={p.label}
-                        type="button"
-                        onClick={() => setAvatarUrl(p.url)}
-                        className="rounded-[8px] border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Upload button — primary action */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="flex items-center justify-center gap-2 w-full rounded-[8px] border border-zinc-300 bg-white px-3 py-2.5 text-xs font-bold text-black hover:bg-zinc-100 transition shadow-xs disabled:opacity-50"
+                  >
+                    <Upload size={14} />
+                    {avatarUploading ? 'Uploading...' : 'Upload from gallery'}
+                  </button>
+                  <p className="text-[10px] text-zinc-400 text-center sm:text-left">JPG, PNG, WebP • Max 2 MB</p>
                 </div>
               </div>
 

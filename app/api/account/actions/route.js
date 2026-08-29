@@ -86,24 +86,83 @@ export async function POST(req) {
       const { username } = body;
       const clean = username?.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
       if (!clean || clean.length < 3) {
-        return NextResponse.json({ error: 'Username must be at least 3 alphanumeric characters.' }, { status: 400 });
+        return NextResponse.json({ error: 'Username must be at least 3 characters (letters, numbers, underscores, dots, or hyphens).' }, { status: 400 });
       }
 
-      // Check reservation blacklist
+      // Check system reserved names
+      const RESERVED_NAMES = [
+        'admin', 'administrator', 'root', 'support', 'help', 'api', 'auth', 'official',
+        'verified', 'security', 'system', 'terms', 'privacy', 'dashboard', 'settings',
+        'linkinbio', 'linktree', 'billing', 'contact', 'about', 'explore', 'discover',
+        'login', 'signup', 'onboarding', 'reset-password'
+      ];
+      if (RESERVED_NAMES.includes(clean)) {
+        return NextResponse.json({ error: 'This handle is reserved by the system.' }, { status: 400 });
+      }
+
+      // Fetch current profile to check cooldown
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentProfile?.username === clean) {
+        return NextResponse.json({ success: true, message: 'Username is unchanged.', username: clean });
+      }
+
+      // Enforce 14-day cooldown limit per username change
+      if (currentProfile?.username_changed_at) {
+        const lastChanged = new Date(currentProfile.username_changed_at).getTime();
+        const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+        const COOLDOWN_DAYS = 14;
+        if (daysSince < COOLDOWN_DAYS) {
+          const daysRemaining = Math.ceil(COOLDOWN_DAYS - daysSince);
+          return NextResponse.json({
+            error: `Handle changes are limited to once every 14 days to prevent broken links and impersonation. You can change your handle again in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
+          }, { status: 429 });
+        }
+      }
+
+      // Check reservation blacklist in DB
       const { data: reserved } = await supabase.from('reserved_usernames').select('username').eq('username', clean).maybeSingle();
       if (reserved) {
         return NextResponse.json({ error: 'This username is reserved by system administrator.' }, { status: 400 });
       }
 
-      // Check collision
-      const { data: existing } = await supabase.from('profiles').select('id').eq('username', clean).neq('id', userId).maybeSingle();
+      // Check exact collision
+      const { data: existing } = await supabase.from('profiles').select('id, username').eq('username', clean).neq('id', userId).maybeSingle();
       if (existing) {
         return NextResponse.json({ error: 'This username is already taken by another creator.' }, { status: 400 });
       }
 
+      // Check confusing similarity with existing creators (e.g. replacing '0' with 'o', or punctuation variations)
+      const normalizedClean = clean.replace(/[^a-z0-9]/g, '').replace(/0/g, 'o').replace(/[1l]/g, 'i');
+      if (normalizedClean.length >= 3) {
+        const { data: allProfiles } = await supabase.from('profiles').select('id, username').neq('id', userId).limit(200);
+        if (allProfiles && allProfiles.length > 0) {
+          const conflict = allProfiles.find((p) => {
+            if (!p.username) return false;
+            const normExisting = p.username.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/0/g, 'o').replace(/[1l]/g, 'i');
+            return normExisting === normalizedClean && p.username.toLowerCase() !== clean;
+          });
+          if (conflict) {
+            return NextResponse.json({
+              error: `This handle is too similar to existing creator @${conflict.username}. Please choose a distinct handle to prevent impersonation.`
+            }, { status: 400 });
+          }
+        }
+      }
+
+      const updateData = {
+        username: clean,
+        username_changed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
       const { data: updated, error } = await supabase
         .from('profiles')
-        .update({ username: clean })
+        .update(updateData)
         .eq('id', userId)
         .select()
         .single();

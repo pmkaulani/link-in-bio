@@ -31,6 +31,81 @@ function Select({ value, onChange, options }) {
   return <CustomSelect value={value} onChange={onChange} options={options} />;
 }
 
+const COLOR_SWATCHES = [
+  { label: 'Black', value: '#000000' },
+  { label: 'White', value: '#ffffff' },
+  { label: 'Zinc', value: '#18181b' },
+  { label: 'Slate', value: '#334155' },
+  { label: 'Emerald', value: '#10b981' },
+  { label: 'Blue', value: '#3b82f6' },
+  { label: 'Indigo', value: '#6366f1' },
+  { label: 'Purple', value: '#a855f7' },
+  { label: 'Rose', value: '#f43f5e' },
+  { label: 'Amber', value: '#f59e0b' },
+];
+
+const GRADIENT_SWATCHES = [
+  { label: 'Midnight', value: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #7C3AED 100%)' },
+  { label: 'Sunset', value: 'linear-gradient(135deg, #7C2D12 0%, #C2410C 45%, #BE123C 100%)' },
+  { label: 'Emerald', value: 'linear-gradient(135deg, #052e16 0%, #14532d 50%, #15803d 100%)' },
+  { label: 'Purple', value: 'linear-gradient(135deg, #4A00E0 0%, #8E2DE2 100%)' },
+  { label: 'Matcha', value: 'linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 50%, #95D5B2 100%)' },
+  { label: 'Dark Carbon', value: 'linear-gradient(135deg, #09090B 0%, #18181B 50%, #27272A 100%)' },
+];
+
+function ColorField({ value, onChange, defaultColor = '#000000' }) {
+  const current = value || defaultColor;
+  const hexValue = /^#[0-9A-Fa-f]{6}$/.test(current)
+    ? current
+    : current === '#000' || current === '#000000'
+    ? '#000000'
+    : current === '#fff' || current === '#ffffff'
+    ? '#ffffff'
+    : '#000000';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <label
+          className="relative flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-zinc-300 shadow-xs overflow-hidden"
+          title="Click to open color picker"
+        >
+          <input
+            type="color"
+            value={hexValue}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute -inset-2 h-12 w-12 cursor-pointer opacity-0"
+          />
+          <span className="h-full w-full" style={{ backgroundColor: current }} />
+        </label>
+        <input
+          type="text"
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#000000"
+          className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-mono font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none shadow-xs"
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        {COLOR_SWATCHES.map((swatch) => (
+          <button
+            key={swatch.value}
+            type="button"
+            onClick={() => onChange(swatch.value)}
+            title={swatch.label}
+            className={`h-5 w-5 rounded-full border transition-transform hover:scale-110 shrink-0 ${
+              current.toLowerCase() === swatch.value.toLowerCase()
+                ? 'ring-2 ring-black ring-offset-1 border-transparent scale-105'
+                : 'border-zinc-300 hover:border-zinc-400'
+            }`}
+            style={{ backgroundColor: swatch.value }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // --- Per-type editors ---
 
 function LinkEditor({ data, onUpdate }) {
@@ -136,21 +211,58 @@ function LinkEditor({ data, onUpdate }) {
         />
       </Field>
 
-      {data.background_type && data.background_type !== 'transparent' && (
-        <Field label="Background Value">
-          <Input
+      {data.background_type === 'solid' && (
+        <Field label="Card Background Color">
+          <ColorField
             value={data.background_value || '#000000'}
             onChange={(v) => onUpdate({ background_value: v })}
-            placeholder={data.background_type === 'image' ? 'https://...' : '#000000 or linear-gradient(...)'}
+            defaultColor="#000000"
           />
         </Field>
       )}
 
-      <Field label="Custom Text Color">
-        <Input
+      {data.background_type === 'gradient' && (
+        <div className="space-y-2">
+          <Field label="Card Gradient Style">
+            <Input
+              value={data.background_value || GRADIENT_SWATCHES[0].value}
+              onChange={(v) => onUpdate({ background_value: v })}
+              placeholder="linear-gradient(...)"
+            />
+          </Field>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {GRADIENT_SWATCHES.map((g) => (
+              <button
+                key={g.label}
+                type="button"
+                onClick={() => onUpdate({ background_value: g.value })}
+                title={g.label}
+                className="h-6 px-2.5 rounded-[6px] text-[10px] font-bold text-white shadow-2xs hover:opacity-90 transition border border-white/20"
+                style={{ background: g.value }}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.background_type === 'image' && (
+        <Field label="Card Background Image URL">
+          <Input
+            value={data.background_value || ''}
+            onChange={(v) => onUpdate({ background_value: v })}
+            placeholder="https://images.unsplash.com/..."
+            type="url"
+          />
+        </Field>
+      )}
+
+      <Field label="Text & Icon Color">
+        <ColorField
           value={data.text_color || '#ffffff'}
           onChange={(v) => onUpdate({ text_color: v })}
-          placeholder="#ffffff"
+          defaultColor="#ffffff"
         />
       </Field>
 

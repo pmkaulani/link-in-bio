@@ -51,7 +51,7 @@ alter table profiles add column if not exists onboarded boolean not null default
 alter table profiles add column if not exists is_verified boolean not null default false;
 alter table profiles add column if not exists account_status text not null default 'active';
 alter table profiles add column if not exists publication_status text not null default 'published';
-alter table profiles add column if not exists suspension_reason text;
+alter table profiles add column if not exists username_changed_at timestamptz;
 alter table profiles add column if not exists sensitive_content boolean not null default false;
 alter table profiles add column if not exists published_profile jsonb;
 alter table profiles add column if not exists published_blocks jsonb;

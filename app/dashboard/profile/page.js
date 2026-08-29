@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../DashboardContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
-import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2 } from 'lucide-react';
+import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2, Upload } from 'lucide-react';
 import { APP_DOMAIN } from '../../../lib/constants';
 
 const SOCIALS = ['instagram', 'youtube', 'tiktok', 'facebook', 'twitter', 'linkedin', 'spotify', 'telegram', 'whatsapp'];
@@ -310,6 +310,8 @@ function ShareCard({ username }) {
 
 export default function ProfilePage() {
   const { profile, userId, updateProfile, loading } = useDashboard();
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   if (loading || !profile) {
     return (
@@ -340,6 +342,43 @@ export default function ProfilePage() {
 
   function handleField(field, value) {
     updateProfile({ [field]: value });
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be under 2 MB.');
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      if (isSupabaseConfigured && userId) {
+        const ext = file.name.split('.').pop();
+        const path = `avatars/${userId}.${ext}`;
+        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        if (!error) {
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+          handleField('avatar_url', urlData.publicUrl + '?t=' + Date.now());
+        } else {
+          const reader = new FileReader();
+          reader.onload = () => handleField('avatar_url', reader.result);
+          reader.readAsDataURL(file);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => handleField('avatar_url', reader.result);
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => handleField('avatar_url', reader.result);
+      reader.readAsDataURL(file);
+    }
+    setAvatarUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function updateSocial(name, value) {
@@ -378,42 +417,46 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-        <div className="flex-1 w-full space-y-1 text-center sm:text-left">
-          <label className={labelClass}>
-            Avatar Image URL
-            <input
-              type="url"
-              value={profile.avatar_url || ''}
-              onChange={(e) => handleField('avatar_url', e.target.value)}
-              placeholder="https://images.unsplash.com/... or paste image URL"
-              className={inputClass}
-            />
-          </label>
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-0.5">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase">Try:</span>
+        <div className="flex-1 w-full space-y-2 text-center sm:text-left">
+          <span className={labelClass}>Profile Photo</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             <button
               type="button"
-              onClick={() => handleField('avatar_url', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80')}
-              className="flex items-center gap-1 rounded-[8px] border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="flex items-center gap-1.5 rounded-[8px] border border-zinc-300 bg-white px-3 py-2 text-xs font-bold text-black hover:bg-zinc-100 transition shadow-xs disabled:opacity-50"
             >
-              <span>Portrait</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleField('avatar_url', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&h=160&q=80')}
-              className="flex items-center gap-1 rounded-[8px] border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100"
-            >
-              <span>Minimal</span>
+              <Upload size={14} />
+              {avatarUploading ? 'Uploading...' : 'Upload from gallery'}
             </button>
             {profile.avatar_url && (
               <button
                 type="button"
                 onClick={() => handleField('avatar_url', '')}
-                className="rounded-[8px] border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-100"
+                className="rounded-[8px] border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition"
               >
-                Reset
+                Remove photo
               </button>
             )}
+          </div>
+          <div>
+            <label className="block text-[10px] text-zinc-400 font-semibold mt-1">
+              Or paste image URL:
+              <input
+                type="url"
+                value={profile.avatar_url || ''}
+                onChange={(e) => handleField('avatar_url', e.target.value)}
+                placeholder="https://..."
+                className="mt-1 w-full rounded-[8px] border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-black placeholder:text-zinc-400 focus:border-black focus:outline-none"
+              />
+            </label>
           </div>
         </div>
       </div>
