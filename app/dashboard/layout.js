@@ -224,33 +224,39 @@ export default function DashboardLayout({ children }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data?.session) {
-        router.push('/login');
-        return;
-      }
+    async function init() {
       try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session) {
+          router.push('/login');
+          return;
+        }
+
         const { data: p } = await supabase
           .from('profiles')
           .select('onboarded')
           .eq('id', data.session.user.id)
-          .single();
+          .maybeSingle();
+
         if (p && p.onboarded === false) {
           router.push('/onboarding');
           return;
         }
       } catch (e) {
         console.error('Error verifying onboarding status:', e);
+      } finally {
+        setChecking(false);
       }
-      setChecking(false);
-    });
+    }
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESH_FAILED') {
         router.push('/login');
       }
     });
-    
+
     return () => subscription?.unsubscribe?.();
   }, [router]);
 

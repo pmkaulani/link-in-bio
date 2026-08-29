@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -18,6 +18,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        router.push('/dashboard');
+      }
+    });
+  }, [router]);
 
   async function handleSubmit(e) {
     e.preventDefault();

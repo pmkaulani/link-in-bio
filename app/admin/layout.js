@@ -57,7 +57,7 @@ export default function AdminLayout({ children }) {
           .from('platform_admins')
           .select('role')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error || !adminRecord) {
           setIsAdmin(false);

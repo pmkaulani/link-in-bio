@@ -58,6 +58,14 @@ function SignupForm() {
   const [checkEmail, setCheckEmail] = useState(false);
   const [transitionStep, setTransitionStep] = useState(0);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        router.push('/dashboard');
+      }
+    });
+  }, [router]);
+
   // Live debounced username validation & availability check
   useEffect(() => {
     const raw = username.trim().toLowerCase();

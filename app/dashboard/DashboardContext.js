@@ -89,7 +89,7 @@ export function DashboardProvider({ children }) {
       setUserId(session.user.id);
 
       const [{ data: profileData }, { data: blocksData }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+        supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
         supabase.from('blocks').select('*').eq('profile_id', session.user.id).order('position'),
       ]);
 
@@ -128,7 +128,23 @@ export function DashboardProvider({ children }) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        load();
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setBlocks([]);
+        setUserId(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe?.();
+    };
+  }, [load]);
 
   // Publish changes live to public visitors
   const publishChanges = useCallback(async () => {
