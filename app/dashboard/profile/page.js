@@ -277,10 +277,14 @@ function ShareCard({ username }) {
           <Link2 size={18} className="text-white" strokeWidth={2.8} />
         </div>
       </div>
-      <div className="max-w-md">
+      <div className="max-w-md flex flex-col items-center">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Share your page</h2>
-        <p className="mt-1 break-all text-sm font-bold text-black">{pageUrl}</p>
-        <p className="mt-1 text-xs text-zinc-500">Scan the badge code or copy the link to share your profile anywhere.</p>
+        <div className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 shadow-2xs font-mono text-xs max-w-full">
+          <Globe size={13} className="text-zinc-500 shrink-0" />
+          <span className="text-zinc-500 font-semibold">{APP_DOMAIN}/</span>
+          <span className="text-black font-black truncate">{username}</span>
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">Scan the badge code or copy the link to share your profile anywhere.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
           <button
             onClick={copyLink}

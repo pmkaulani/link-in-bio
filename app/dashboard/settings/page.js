@@ -441,26 +441,33 @@ export default function SettingsPage() {
             </div>
 
             {/* Username Form */}
-            <form onSubmit={handleSaveUsername} className="p-4 rounded-[8px] bg-zinc-50 border border-zinc-200 space-y-2">
+            <form onSubmit={handleSaveUsername} className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-3">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Username / Handle</span>
-                <p className="text-[11px] text-zinc-500 mt-0.5">Your public bio link: {APP_DOMAIN}/{profile?.username || 'yourname'}</p>
+                <div className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white border border-zinc-200 shadow-2xs text-[11px] font-mono">
+                  <Globe size={13} className="text-zinc-400 shrink-0" />
+                  <span className="text-zinc-400 font-semibold">{APP_DOMAIN}/</span>
+                  <span className="text-black font-black">{profile?.username || 'yourname'}</span>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
-                <div className="flex flex-1 items-center rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 focus-within:border-black shadow-xs">
-                  <span className="text-xs font-bold text-zinc-400 select-none">{APP_DOMAIN}/</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex flex-1 items-center overflow-hidden rounded-[8px] border border-zinc-300 bg-white focus-within:border-black focus-within:ring-1 focus-within:ring-black shadow-xs">
+                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3 py-2 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
+                    <Globe size={12} className="text-zinc-400" />
+                    <span>{APP_DOMAIN}/</span>
+                  </span>
                   <input
                     type="text"
                     value={usernameInput}
                     onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
-                    className="w-full bg-transparent px-1 text-xs font-bold text-black outline-none"
+                    className="w-full bg-transparent px-2.5 py-2 text-xs font-mono font-bold text-black outline-none"
                     placeholder="yourname"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading || usernameInput === profile?.username}
-                  className="rounded-[8px] bg-black px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800 disabled:opacity-40 transition shadow-xs shrink-0"
+                  className="rounded-[8px] bg-black px-4 py-2.5 text-xs font-bold text-white hover:bg-zinc-800 disabled:opacity-40 transition shadow-xs shrink-0"
                 >
                   Save Username
                 </button>

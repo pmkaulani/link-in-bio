@@ -29,6 +29,7 @@ import {
   Link2,
   Contrast,
   Download,
+  Globe,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../lib/constants';
 
@@ -221,14 +222,17 @@ function ClaimUsernameModal({ profile, isOpen, onClose }) {
             </p>
 
             <form onSubmit={handleClaim} className="mt-5 flex flex-col gap-2.5">
-              <div className="flex items-center rounded-2xl bg-zinc-900 border border-zinc-800 px-3.5 py-3 shadow-inner">
-                <span className="text-xs font-bold text-zinc-500 select-none">{APP_DOMAIN}/</span>
+              <div className="flex items-center rounded-2xl bg-zinc-900 border border-zinc-800 p-1.5 shadow-inner focus-within:border-zinc-600 transition">
+                <span className="flex items-center gap-1.5 rounded-xl bg-black border border-zinc-800 px-3 py-2 text-xs font-mono font-bold text-zinc-400 select-none shrink-0">
+                  <Globe size={12} className="text-zinc-500" />
+                  <span>{APP_DOMAIN}/</span>
+                </span>
                 <input
                   type="text"
                   value={claimHandle}
                   onChange={(e) => setClaimHandle(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
                   placeholder="yourname"
-                  className="w-full bg-transparent text-xs font-bold text-white outline-none placeholder:text-zinc-600 pl-1"
+                  className="w-full bg-transparent px-2.5 text-xs sm:text-sm font-mono font-bold text-white outline-none placeholder:text-zinc-600"
                 />
               </div>
 

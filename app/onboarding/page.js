@@ -304,9 +304,10 @@ export default function OnboardingPage() {
               {/* Username Input */}
               <div>
                 <span className={labelClass}>Username</span>
-                <div className="mt-1.5 flex items-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-xs focus-within:border-black">
-                  <span className="bg-zinc-100 border-r border-zinc-200 px-3.5 py-3 text-xs font-bold text-zinc-500 select-none">
-                    {APP_DOMAIN}/
+                <div className="mt-1.5 flex items-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-xs focus-within:border-black focus-within:ring-1 focus-within:ring-black">
+                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3.5 py-3 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
+                    <Globe size={13} className="text-zinc-400" />
+                    <span>{APP_DOMAIN}/</span>
                   </span>
                   <input
                     type="text"
@@ -315,6 +316,12 @@ export default function OnboardingPage() {
                     placeholder="yourname"
                     className="w-full py-3 px-3 text-xs font-bold text-black focus:outline-none"
                   />
+                </div>
+                {/* Live Preview pill */}
+                <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-[6px] bg-zinc-100/70 border border-zinc-200/80 text-[11px] text-zinc-500">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Your link:</span>
+                  <span className="font-mono text-zinc-500">{APP_DOMAIN}/</span>
+                  <span className="font-mono font-black text-black">{username || 'yourname'}</span>
                 </div>
                 {usernameError && <p className="mt-1.5 text-xs font-bold text-red-600">{usernameError}</p>}
               </div>
@@ -536,9 +543,11 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-black">Your canvas is ready</h1>
-                <p className="mt-1 text-sm font-bold text-zinc-600">
-                  {APP_DOMAIN}/{username || 'you'}
-                </p>
+                <div className="mt-2.5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 shadow-2xs">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-mono text-zinc-400 font-semibold">{APP_DOMAIN}/</span>
+                  <span className="text-xs font-mono font-black text-black">{username || 'you'}</span>
+                </div>
               </div>
 
               {/* Quick Feature Highlights */}

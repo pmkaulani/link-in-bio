@@ -13,6 +13,7 @@ import {
   Sparkles,
   CheckCircle2,
   Loader2,
+  Globe,
 } from 'lucide-react';
 import GoogleAuthButton from '../../components/GoogleAuthButton';
 import BrandLogo from '../../components/BrandLogo';
@@ -395,16 +396,17 @@ function SignupForm() {
                   )}
                 </div>
                 <div
-                  className={`flex items-center overflow-hidden rounded-[8px] border bg-white transition ${
+                  className={`flex items-center overflow-hidden rounded-[8px] border bg-white transition shadow-xs ${
                     userStatus?.available === true
                       ? 'border-black ring-1 ring-black'
                       : userStatus?.available === false
                       ? 'border-red-500 ring-1 ring-red-500'
-                      : 'border-zinc-200 focus-within:border-black'
+                      : 'border-zinc-200 focus-within:border-black focus-within:ring-1 focus-within:ring-black'
                   }`}
                 >
-                  <span className="pl-4 text-xs font-bold text-zinc-400 select-none">
-                    {APP_DOMAIN}/
+                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3.5 py-3 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
+                    <Globe size={13} className="text-zinc-400" />
+                    <span>{APP_DOMAIN}/</span>
                   </span>
                   <input
                     type="text"
@@ -412,7 +414,7 @@ function SignupForm() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="w-full py-3 pl-1 pr-3 text-xs font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:outline-none"
+                    className="w-full py-3 px-3 text-xs font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:outline-none"
                   />
                   {userStatus === 'checking' && (
                     <div className="pr-3 text-zinc-400">
@@ -428,6 +430,20 @@ function SignupForm() {
                     <div className="pr-3 text-red-500 font-bold">
                       <XIcon size={16} />
                     </div>
+                  )}
+                </div>
+
+                {/* Live Clean URL Capsule Badge */}
+                <div className="mt-2 flex items-center justify-between gap-2 px-3 py-1.5 rounded-[8px] bg-zinc-100/70 border border-zinc-200/80 text-[11px]">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Live URL:</span>
+                    <span className="font-mono text-zinc-500 truncate">{APP_DOMAIN}/</span>
+                    <span className="font-mono font-black text-black truncate">{username || 'yourname'}</span>
+                  </div>
+                  {userStatus?.available === true && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded-[6px] border border-zinc-200 shadow-2xs shrink-0">
+                      <Check size={10} strokeWidth={3} /> Available
+                    </span>
                   )}
                 </div>
               </div>

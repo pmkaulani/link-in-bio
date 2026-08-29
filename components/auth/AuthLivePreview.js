@@ -201,9 +201,10 @@ export default function AuthLivePreview({
             <h2 className="text-base font-black tracking-tight text-center leading-tight truncate max-w-[240px]">
               {displayName || 'Your Name'}
             </h2>
-            <span className="text-xs font-semibold opacity-75 mt-0.5 truncate max-w-[240px]">
-              {APP_DOMAIN}/{cleanHandle}
-            </span>
+            <div className="mt-1 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-black/5 border border-black/10 text-[11px] font-mono shadow-2xs max-w-[240px]">
+              <span className="opacity-60">{APP_DOMAIN}/</span>
+              <span className="font-bold opacity-100 truncate">{cleanHandle}</span>
+            </div>
 
             {/* Socials Bar */}
             <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
