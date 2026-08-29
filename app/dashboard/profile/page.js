@@ -421,30 +421,32 @@ export default function ProfilePage() {
           <p className="mt-1 text-xs text-zinc-500">Changes update the preview instantly.</p>
         </div>
 
-        {/* Post Button */}
-        <button
-          onClick={handlePost}
-          disabled={posting}
-          className="flex shrink-0 items-center justify-center gap-2 rounded-[4px] bg-black px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60"
-          title={hasUnpostedChanges ? 'Publish your profile edits live' : 'All profile edits are already live'}
-        >
-          {posting ? (
-            <>
-              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Posting...
-            </>
-          ) : postedSuccess ? (
-            <>
-              <Check size={14} />
-              Profile Posted Live!
-            </>
-          ) : (
-            <>
-              <Check size={14} />
-              Post changes live
-            </>
-          )}
-        </button>
+        {/* Post Button — ONLY shown when there are draft changes to post */}
+        {(hasUnpostedChanges || posting || postedSuccess) && (
+          <button
+            onClick={handlePost}
+            disabled={posting}
+            className="flex shrink-0 items-center justify-center gap-2 rounded-[6px] bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60 animate-profile-in"
+            title="Publish your profile edits live"
+          >
+            {posting ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Posting...
+              </>
+            ) : postedSuccess ? (
+              <>
+                <Check size={14} />
+                Profile Posted Live!
+              </>
+            ) : (
+              <>
+                <Check size={14} />
+                Post changes
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {postedSuccess && (

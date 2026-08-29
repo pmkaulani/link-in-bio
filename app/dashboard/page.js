@@ -86,35 +86,32 @@ export default function BlocksPage() {
           </p>
         </div>
 
-        {/* Post Button (Solid Black) */}
-        <button
-          onClick={handlePost}
-          disabled={posting}
-          className="flex shrink-0 items-center justify-center gap-2 rounded-[4px] bg-black px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60"
-          title={hasUnpostedChanges ? 'Publish your draft changes live' : 'All changes are already posted live'}
-        >
-          {posting ? (
-            <>
-              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Posting...
-            </>
-          ) : postedSuccess ? (
-            <>
-              <CheckCircle2 size={15} />
-              Posted Live!
-            </>
-          ) : hasUnpostedChanges ? (
-            <>
-              <Send size={14} />
-              Post changes
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={14} />
-              Post changes
-            </>
-          )}
-        </button>
+        {/* Post Button — ONLY shown when there are draft changes to post */}
+        {(hasUnpostedChanges || posting || postedSuccess) && (
+          <button
+            onClick={handlePost}
+            disabled={posting}
+            className="flex shrink-0 items-center justify-center gap-2 rounded-[6px] bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60 animate-profile-in"
+            title="Publish your draft changes live"
+          >
+            {posting ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Posting...
+              </>
+            ) : postedSuccess ? (
+              <>
+                <CheckCircle2 size={15} />
+                Posted Live!
+              </>
+            ) : (
+              <>
+                <Send size={14} />
+                Post changes
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Success Notification Banner */}

@@ -101,25 +101,11 @@ export function DashboardProvider({ children }) {
 
       // Check published state
       if (loadedProfile) {
-        if (loadedProfile.published_blocks === undefined || loadedProfile.published_blocks === null) {
-          setPublishedProfile(loadedProfile);
-          setPublishedBlocks(loadedBlocks);
-          setHasUnpostedChanges(false);
-          await supabase.from('profiles').update({
-            published_blocks: loadedBlocks,
-            published_profile: loadedProfile,
-            published_at: new Date().toISOString(),
-          }).eq('id', session.user.id);
-        } else {
-          const pubBlocks = loadedProfile.published_blocks || [];
-          const pubProfile = loadedProfile.published_profile || loadedProfile;
-          setPublishedBlocks(pubBlocks);
-          setPublishedProfile(pubProfile);
-
-          const blocksChanged = JSON.stringify(loadedBlocks) !== JSON.stringify(pubBlocks);
-          const profileChanged = normalizeForComparison(loadedProfile) !== normalizeForComparison(pubProfile);
-          setHasUnpostedChanges(blocksChanged || profileChanged);
-        }
+        const pubBlocks = loadedProfile.published_blocks || loadedBlocks;
+        const pubProfile = loadedProfile.published_profile || loadedProfile;
+        setPublishedBlocks(pubBlocks);
+        setPublishedProfile(pubProfile);
+        setHasUnpostedChanges(false);
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
