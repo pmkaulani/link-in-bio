@@ -20,6 +20,28 @@ export default function LoginPage() {
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const justLoggedOut = params.get('logout') === '1';
+
+    // If the user explicitly logged out, wipe any residual tokens so Supabase
+    // cannot restore the old session, and do NOT redirect them to dashboard.
+    if (justLoggedOut) {
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            key.startsWith('sb-') ||
+            key.includes('supabase') ||
+            key.includes('gotrue') ||
+            key === 'local_supabase_db' ||
+            key === 'linkinbio_local_session'
+          ) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
+      return; // stay on login page — don't auto-redirect
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session) {
         router.push('/dashboard');

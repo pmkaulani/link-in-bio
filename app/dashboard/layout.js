@@ -35,8 +35,28 @@ function InnerLayout({ children }) {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push('/');
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (_) {
+      // ignore signOut errors — we clear storage regardless
+    }
+    // Force-wipe all Supabase auth tokens from localStorage so the session
+    // cannot be automatically restored when the user visits /login or /signup
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (
+          key.startsWith('sb-') ||
+          key.includes('supabase') ||
+          key.includes('gotrue') ||
+          key === 'local_supabase_db' ||
+          key === 'linkinbio_local_session'
+        ) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (_) {}
+    // Hard navigation tears down the React component tree + clears all state
+    window.location.href = '/login?logout=1';
   }
 
   return (

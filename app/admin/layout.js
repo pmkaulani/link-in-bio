@@ -176,8 +176,15 @@ export default function AdminLayout({ children }) {
 
           <button
             onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/');
+              try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
+              try {
+                Object.keys(localStorage).forEach((key) => {
+                  if (key.startsWith('sb-') || key.includes('supabase') || key.includes('gotrue') || key === 'local_supabase_db' || key === 'linkinbio_local_session') {
+                    localStorage.removeItem(key);
+                  }
+                });
+              } catch (_) {}
+              window.location.href = '/login?logout=1';
             }}
             className="flex items-center gap-1 sm:gap-1.5 rounded-[8px] border border-zinc-800 bg-zinc-900 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-zinc-400 transition hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-900/50 active:scale-95"
             title="Log out"
