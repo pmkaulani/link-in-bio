@@ -19,6 +19,7 @@ import {
   FileText,
   AlertOctagon,
   AlertTriangle,
+  LogOut,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../../lib/constants';
 
@@ -568,6 +569,31 @@ export default function SettingsPage() {
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Session & Sign Out Card */}
+          <div className="py-6 border-t border-zinc-200 space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-black flex items-center gap-2">
+              <LogOut size={14} className="text-black" />
+              Session & Sign Out
+            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[8px] border border-zinc-200 bg-zinc-50">
+              <div>
+                <span className="block text-xs font-bold text-black">Log Out of Account</span>
+                <span className="block text-[11px] text-zinc-500 mt-0.5">End your active session on this device.</span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push('/');
+                }}
+                className="flex items-center justify-center gap-2 rounded-[8px] border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition shadow-xs shrink-0"
+              >
+                <LogOut size={13} />
+                <span>Log Out</span>
+              </button>
             </div>
           </div>
         </div>

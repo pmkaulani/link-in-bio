@@ -12,6 +12,7 @@ import {
   Activity,
   ArrowLeft,
   Lock,
+  LogOut,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 import { supabase, isLocalMode } from '../../lib/supabase';
@@ -172,6 +173,19 @@ export default function AdminLayout({ children }) {
             <ArrowLeft size={12} className="shrink-0" />
             <span>Dashboard</span>
           </Link>
+
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push('/');
+            }}
+            className="flex items-center gap-1 sm:gap-1.5 rounded-[8px] border border-zinc-800 bg-zinc-900 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-zinc-400 transition hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-900/50 active:scale-95"
+            title="Log out"
+            aria-label="Log out"
+          >
+            <LogOut size={12} className="shrink-0" />
+            <span className="hidden sm:inline">Log out</span>
+          </button>
         </div>
       </header>
 

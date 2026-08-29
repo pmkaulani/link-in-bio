@@ -78,6 +78,14 @@ function InnerLayout({ children }) {
               <ExternalLink size={14} />
             </a>
           )}
+          <button
+            onClick={handleLogout}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-600 transition active:scale-95 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
+            title="Log out"
+            aria-label="Log out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </header>
 
