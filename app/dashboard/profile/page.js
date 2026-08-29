@@ -541,6 +541,7 @@ export default function ProfilePage() {
             type="text"
             value={profile.display_name || ''}
             onChange={(e) => handleField('display_name', e.target.value)}
+            placeholder="e.g. Amélie Poulain"
             maxLength={60}
             className={inputClass}
           />
@@ -551,6 +552,7 @@ export default function ProfilePage() {
           <textarea
             value={profile.bio || ''}
             onChange={(e) => handleField('bio', e.target.value)}
+            placeholder="Photographer, filmmaker & collector of little moments."
             rows={3}
             maxLength={280}
             className={inputClass}

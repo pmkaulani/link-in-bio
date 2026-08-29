@@ -425,7 +425,7 @@ function SignupForm() {
                   </span>
                   <input
                     type="text"
-                    placeholder="yourname"
+                    placeholder="amelie"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
@@ -453,7 +453,7 @@ function SignupForm() {
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Live URL:</span>
                     <span className="font-mono text-zinc-500 truncate">{APP_DOMAIN}/</span>
-                    <span className="font-mono font-black text-black truncate">{username || 'yourname'}</span>
+                    <span className="font-mono font-black text-black truncate">{username || 'amelie'}</span>
                   </div>
                   {userStatus?.available === true && (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded-[6px] border border-zinc-200 shadow-2xs shrink-0">
@@ -470,7 +470,7 @@ function SignupForm() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Peter Kaulani"
+                  placeholder="e.g. Amélie Poulain"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className={inputClass}
@@ -511,7 +511,7 @@ function SignupForm() {
                 </label>
                 <input
                   type="email"
-                  placeholder="you@domain.com"
+                  placeholder="creator@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

@@ -117,8 +117,8 @@ const VIBE_CONFIGS = {
 
 export default function AuthLivePreview({
   mode = 'login', // 'login' | 'signup'
-  username = 'peter',
-  displayName = 'Peter Kaulani',
+  username = 'amelie',
+  displayName = 'Amélie Poulain',
   vibe = 'minimal',
 }) {
   const [activeHoverIdx, setActiveHoverIdx] = useState(0);

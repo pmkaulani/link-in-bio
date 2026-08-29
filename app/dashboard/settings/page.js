@@ -591,7 +591,7 @@ export default function SettingsPage() {
                   type="text"
                   value={displayNameInput}
                   onChange={(e) => setDisplayNameInput(e.target.value)}
-                  placeholder="e.g. Peter K."
+                  placeholder="e.g. Amélie Poulain"
                   className="flex-1 rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 text-xs font-bold text-black outline-none focus:border-black shadow-xs"
                 />
                 <button

@@ -392,7 +392,7 @@ export default function OnboardingPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="yourname"
+                    placeholder="amelie"
                     className="w-full py-3 px-3 text-xs font-bold text-black focus:outline-none"
                   />
                 </div>
@@ -400,7 +400,7 @@ export default function OnboardingPage() {
                 <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-[6px] bg-zinc-100/70 border border-zinc-200/80 text-[11px] text-zinc-500">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Your link:</span>
                   <span className="font-mono text-zinc-500">{APP_DOMAIN}/</span>
-                  <span className="font-mono font-black text-black">{username || 'yourname'}</span>
+                  <span className="font-mono font-black text-black">{username || 'amelie'}</span>
                 </div>
                 {usernameError && <p className="mt-1.5 text-xs font-bold text-red-600">{usernameError}</p>}
               </div>
@@ -412,7 +412,7 @@ export default function OnboardingPage() {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder={username || 'Your Name / Brand'}
+                  placeholder="Amélie Poulain"
                   className={`${inputClass} mt-1.5`}
                 />
               </div>
@@ -424,7 +424,7 @@ export default function OnboardingPage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   rows={2}
-                  placeholder="Creative designer, musician, founder..."
+                  placeholder="Photographer, filmmaker & collector of little moments."
                   className={`${inputClass} mt-1.5`}
                 />
               </div>

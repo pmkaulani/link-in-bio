@@ -94,7 +94,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <AuthLivePreview mode="login" username="peter.dev" displayName="Peter Kaulani" vibe="minimal" />
+          <AuthLivePreview mode="login" username="amelie" displayName="Amélie Poulain" vibe="minimal" />
         </div>
 
         {/* Right Side: Login Form (Lowered on Mobile) */}
@@ -138,7 +138,7 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="email"
-                  placeholder="you@domain.com"
+                  placeholder="creator@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
