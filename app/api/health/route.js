@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { isLocalMode, isSupabaseConfigured } from '../../../lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Public health probe — returns operational status without leaking secrets,
  * connection strings, or internal infrastructure details.
