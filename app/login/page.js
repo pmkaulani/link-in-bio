@@ -49,6 +49,11 @@ export default function LoginPage() {
     });
   }, [router]);
 
+  const [failCount, setFailCount] = useState(0);
+  const [showOAuthHint, setShowOAuthHint] = useState(false);
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [passwordSetSent, setPasswordSetSent] = useState(false);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!isSupabaseConfigured) {
@@ -60,10 +65,32 @@ export default function LoginPage() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (signInError) {
+      const newCount = failCount + 1;
+      setFailCount(newCount);
+      // After 1 failed attempt, check if they might have signed up with Google.
+      // Supabase returns 400 "Invalid login credentials" for OAuth-only accounts too —
+      // we can't perfectly distinguish it, so after the first fail we surface the hint.
+      if (newCount >= 1 && email) {
+        setShowOAuthHint(true);
+      }
       setError(friendlyAuthError(signInError));
       return;
     }
     router.push('/dashboard');
+  }
+
+  async function handleSetPassword() {
+    if (!email) return;
+    setSettingPassword(true);
+    const { error: resetError } = await requestPasswordReset(email);
+    setSettingPassword(false);
+    if (resetError) {
+      setError(friendlyAuthError(resetError));
+      return;
+    }
+    setPasswordSetSent(true);
+    setShowOAuthHint(false);
+    setError('');
   }
 
   async function handleForgotPassword() {
@@ -136,6 +163,32 @@ export default function LoginPage() {
               {error && (
                 <p className="rounded-[8px] bg-red-50 border border-red-200/60 px-4 py-2.5 text-xs font-bold text-red-600">
                   {error}
+                </p>
+              )}
+
+              {/* Google OAuth hint — shown after first failed password attempt */}
+              {showOAuthHint && !passwordSetSent && (
+                <div className="rounded-[8px] bg-amber-50 border border-amber-200 px-4 py-3 space-y-2">
+                  <p className="text-xs font-bold text-amber-800">
+                    Did you sign up with Google?
+                  </p>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    If you originally signed in with Google, your account doesn&apos;t have a password yet. Click below to set one — we&apos;ll email you a link.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSetPassword}
+                    disabled={settingPassword}
+                    className="mt-1 w-full rounded-[7px] bg-amber-800 px-3 py-2 text-xs font-bold text-white hover:bg-amber-900 transition disabled:opacity-50"
+                  >
+                    {settingPassword ? 'Sending…' : 'Set a password for email login →'}
+                  </button>
+                </div>
+              )}
+
+              {passwordSetSent && (
+                <p className="flex items-center gap-2 rounded-[8px] bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-800">
+                  <Check size={14} /> Password setup link sent — check your email inbox.
                 </p>
               )}
 
