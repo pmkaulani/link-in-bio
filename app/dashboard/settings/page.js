@@ -542,10 +542,10 @@ export default function SettingsPage() {
                 </p>
                 <div className="space-y-1.5 pt-1">
                   {/* Current Active */}
-                  <div className="flex items-center justify-between p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs">
+                  <div className="flex flex-col gap-1 p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-black">@{profile.username}</span>
-                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5">
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
                         Current Active
                       </span>
                     </div>
@@ -553,7 +553,7 @@ export default function SettingsPage() {
                       href={`/${profile.username}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] font-bold text-black underline"
+                      className="text-[11px] font-bold text-black underline break-all"
                     >
                       {APP_DOMAIN}/{profile.username} ↗
                     </a>
@@ -563,15 +563,15 @@ export default function SettingsPage() {
                   {profile.socials._handle_history.map((h, i) => (
                     <div
                       key={h.handle || i}
-                      className="flex items-center justify-between p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs text-zinc-600"
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs text-zinc-600"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold text-zinc-700">@{h.handle}</span>
-                        <span className="rounded-full bg-zinc-100 text-zinc-600 text-[9px] font-semibold px-2 py-0.5">
-                          Released (Available for anyone)
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <span className="font-mono font-semibold text-zinc-700 shrink-0">@{h.handle}</span>
+                        <span className="rounded-full bg-zinc-100 text-zinc-500 text-[9px] font-semibold px-2 py-0.5 shrink-0">
+                          Released · available
                         </span>
                       </div>
-                      <span className="text-[10px] text-zinc-400 font-medium">
+                      <span className="text-[10px] text-zinc-400 font-medium shrink-0">
                         {h.released_at ? new Date(h.released_at).toLocaleDateString() : 'Previous'}
                       </span>
                     </div>
