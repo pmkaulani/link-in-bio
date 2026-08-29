@@ -32,10 +32,14 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-full border border-amber-500/30 bg-amber-500/90 px-4 py-2 text-xs font-semibold text-zinc-950 shadow-2xl backdrop-blur-md animate-bounce"
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/95 px-4 py-2 text-xs font-mono font-medium text-white shadow-2xl backdrop-blur-md"
     >
-      <WifiOff size={14} className="shrink-0" />
-      <span>You are currently offline. Changes will save once reconnected.</span>
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+      </span>
+      <WifiOff size={13} className="text-amber-400 shrink-0" />
+      <span className="text-zinc-300">Offline mode • Changes will sync upon reconnection</span>
     </div>
   );
 }
