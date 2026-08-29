@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { THEME_PRESETS, BG_EFFECTS, HOVER_EFFECTS, QUICK_SOCIALS } from '../../lib/presets';
+import { THEME_PRESETS, QUICK_SOCIALS } from '../../lib/presets';
 import { ICONS } from '../../lib/icons';
 import {
   ArrowRight,
@@ -20,11 +20,46 @@ import BrandLogo from '../../components/BrandLogo';
 import { APP_DOMAIN } from '../../lib/constants';
 
 const STEPS = [
-  { label: 'Profile', desc: 'Identity & handle' },
-  { label: 'Theme', desc: 'Colors & atmosphere' },
-  { label: 'Motion', desc: 'Hover & animations' },
-  { label: 'Links', desc: 'Socials & content' },
-  { label: 'Launch', desc: 'Summary & tour' },
+  { label: 'You', desc: 'Identity & handle' },
+  { label: 'Your Links', desc: 'Socials & content' },
+  { label: 'Make it yours', desc: 'Pick a starter look' },
+  { label: 'Go Live', desc: 'Launch your page' },
+];
+
+// Pre-bundled starter looks — each one is a single click that sets theme + bg_effect + hover_effect
+const STARTER_LOOKS = [
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    desc: 'Clean white canvas, simple elevation',
+    theme: THEME_PRESETS.find((t) => t.name === 'Classic Monochrome') || THEME_PRESETS[0],
+    bgEffect: 'none',
+    hoverEffect: 'lift',
+  },
+  {
+    id: 'bold',
+    name: 'Bold',
+    desc: 'Pure black studio, spotlight cards',
+    theme: THEME_PRESETS.find((t) => t.name === 'Studio Dark') || THEME_PRESETS[2],
+    bgEffect: 'none',
+    hoverEffect: 'spotlight',
+  },
+  {
+    id: 'glow',
+    name: 'Glow',
+    desc: 'Aurora gradient with beam borders',
+    theme: THEME_PRESETS.find((t) => t.name === 'Midnight Aurora') || THEME_PRESETS[1],
+    bgEffect: 'aurora',
+    hoverEffect: 'border_beam',
+  },
+  {
+    id: 'retro',
+    name: 'Retro',
+    desc: 'Yellow pop with blueprint grid',
+    theme: THEME_PRESETS.find((t) => t.name === 'Retro Pop') || THEME_PRESETS[13],
+    bgEffect: 'grid_warp',
+    hoverEffect: 'lift',
+  },
 ];
 
 const AVATAR_PRESETS = [
@@ -93,11 +128,11 @@ export default function OnboardingPage() {
   const [usernameError, setUsernameError] = useState('');
   const [checkingUsername, setCheckingUsername] = useState(false);
 
-  // Theme & Effects data (Classic Monochrome as default)
-  const [theme, setTheme] = useState(THEME_PRESETS[0]);
-  const [bgEffect, setBgEffect] = useState('none');
-  const [hoverEffect, setHoverEffect] = useState('lift');
-  const [cursorGlow, setCursorGlow] = useState('none');
+  // Theme & Effects data — defaults to Minimal starter look
+  const [theme, setTheme] = useState(STARTER_LOOKS[0].theme);
+  const [bgEffect, setBgEffect] = useState(STARTER_LOOKS[0].bgEffect);
+  const [hoverEffect, setHoverEffect] = useState(STARTER_LOOKS[0].hoverEffect);
+  const [selectedLook, setSelectedLook] = useState('minimal');
 
   // Links data
   const [selectedSocials, setSelectedSocials] = useState({
@@ -145,6 +180,13 @@ export default function OnboardingPage() {
     setSelectedSocials((prev) => ({ ...prev, [icon]: url }));
   }
 
+  function applyStarterLook(look) {
+    setSelectedLook(look.id);
+    setTheme(look.theme);
+    setBgEffect(look.bgEffect);
+    setHoverEffect(look.hoverEffect);
+  }
+
   async function validateUsernameAndAdvance() {
     const clean = username.trim().toLowerCase();
     if (!clean) {
@@ -189,7 +231,6 @@ export default function OnboardingPage() {
           background_type: theme.background_type,
           background_value: theme.background_value,
           bg_effect: bgEffect,
-          cursor_glow: cursorGlow,
           onboarded: true,
         })
         .eq('id', userId);
@@ -246,7 +287,7 @@ export default function OnboardingPage() {
 
         {/* Card Container */}
         <div className="py-6 sm:py-8">
-          {/* ================= STEP 0: PROFILE BASICS ================= */}
+          {/* ================= STEP 0: YOU — PROFILE BASICS ================= */}
           {step === 0 && (
             <div className="flex flex-col gap-5">
               <div className="text-center">
@@ -352,127 +393,8 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* ================= STEP 1: THEME & ATMOSPHERE ================= */}
+          {/* ================= STEP 1: YOUR LINKS ================= */}
           {step === 1 && (
-            <div className="flex flex-col gap-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black tracking-tight text-black">Choose your canvas vibe</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Pick a curated theme preset (you can customize colors anytime in dashboard).
-                </p>
-              </div>
-
-              {/* Curated Theme Presets */}
-              <div>
-                <span className={labelClass}>Starter Theme</span>
-                <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                  {THEME_PRESETS.slice(0, 6).map((preset) => {
-                    const active = theme.name === preset.name;
-                    return (
-                      <button
-                        key={preset.name}
-                        onClick={() => {
-                          setTheme(preset);
-                          if (preset.bg_effect) setBgEffect(preset.bg_effect);
-                        }}
-                        className={`group relative h-20 rounded-[14px] p-3 text-left shadow-sm transition hover:-translate-y-0.5 ${
-                          active ? 'ring-2 ring-black ring-offset-2 font-bold' : 'border border-zinc-200'
-                        }`}
-                        style={{ background: preset.background_value, color: preset.text_color || '#FFFFFF' }}
-                      >
-                        <span className="text-xs font-extrabold block truncate drop-shadow-sm">{preset.name}</span>
-                        <span className="block text-[10px] opacity-75 capitalize">{preset.bg_effect || 'clean'}</span>
-                        {active && (
-                          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-extrabold text-black shadow-md">
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Background Atmosphere Effects */}
-              <div>
-                <span className={labelClass}>Atmosphere Effect</span>
-                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {BG_EFFECTS.slice(0, 6).map((fx) => {
-                    const active = bgEffect === fx.value;
-                    return (
-                      <button
-                        key={fx.value}
-                        onClick={() => setBgEffect(fx.value)}
-                        className={`flex flex-col items-start rounded-[8px] border p-2.5 text-left transition ${
-                          active
-                            ? 'border-black bg-zinc-50 font-bold text-black ring-1 ring-black/10'
-                            : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-700'
-                        }`}
-                      >
-                        <div className="flex w-full items-center justify-between">
-                          <span className="text-xs font-bold">{fx.label}</span>
-                          {active && <Check size={12} className="text-black shrink-0" />}
-                        </div>
-                        <span className="mt-0.5 text-[10px] text-zinc-400 font-normal truncate w-full">{fx.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ================= STEP 2: MOTION & HOVER EFFECTS ================= */}
-          {step === 2 && (
-            <div className="flex flex-col gap-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black tracking-tight text-black">Interactive motion</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Select how link cards animate when visitors interact with your profile.
-                </p>
-              </div>
-
-              {/* Hover Interactions */}
-              <div>
-                <span className={labelClass}>Link Hover Interaction</span>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {[
-                    { id: 'lift', label: 'Spring Lift', desc: 'Smooth spring elevation pop', cls: 'link-hover-lift' },
-                    { id: 'border_beam', label: 'Border Beam Glow', desc: 'Rotating laser border glow', cls: 'link-hover-border-beam' },
-                    { id: 'spotlight', label: 'Spotlight Card', desc: 'Luminous ambient border tracking', cls: 'link-hover-spotlight' },
-                    { id: 'shine', label: 'Liquid Shimmer', desc: 'Glassmorphic light sweep reflection', cls: 'link-hover-shine' },
-                    { id: 'tilt', label: '3D Magnetic Tilt', desc: 'Tactile 3D depth and angle tilt', cls: 'link-hover-tilt' },
-                    { id: 'glow', label: 'Neon Aura', desc: 'Diffused outer glow', cls: 'link-hover-glow' },
-                  ].map((fx) => {
-                    const active = hoverEffect === fx.id;
-                    return (
-                      <button
-                        key={fx.id}
-                        onClick={() => setHoverEffect(fx.id)}
-                        className={`group relative flex items-center justify-between rounded-[8px] border p-3 text-left transition-all ${
-                          active
-                            ? 'border-black bg-zinc-50 ring-2 ring-black/10 font-bold'
-                            : 'border-zinc-200 bg-white hover:border-zinc-300'
-                        } ${fx.cls}`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-black">{fx.label}</span>
-                            {active && <span className="rounded bg-black px-1.5 py-0.5 text-[9px] font-bold text-white">Active</span>}
-                          </div>
-                          <span className="mt-0.5 block text-[11px] text-zinc-400 font-normal">{fx.desc}</span>
-                        </div>
-                        <span className="text-xs font-bold text-black opacity-0 group-hover:opacity-100 transition">Select</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ================= STEP 3: LINKS & SOCIALS ================= */}
-          {step === 3 && (
             <div className="flex flex-col gap-5">
               <div className="text-center">
                 <h1 className="text-2xl font-black tracking-tight text-black">Add your starter links</h1>
@@ -535,8 +457,63 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* ================= STEP 4: LAUNCH & FEATURE TOUR ================= */}
-          {step === 4 && (
+          {/* ================= STEP 2: MAKE IT YOURS — STARTER LOOKS ================= */}
+          {step === 2 && (
+            <div className="flex flex-col gap-5">
+              <div className="text-center">
+                <h1 className="text-2xl font-black tracking-tight text-black">Make it yours</h1>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Pick a starter look — you can customize everything in the dashboard later.
+                </p>
+              </div>
+
+              {/* Starter Look Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                {STARTER_LOOKS.map((look) => {
+                  const active = selectedLook === look.id;
+                  return (
+                    <button
+                      key={look.id}
+                      onClick={() => applyStarterLook(look)}
+                      className={`group relative flex flex-col justify-between rounded-[14px] p-4 text-left transition-all hover:-translate-y-0.5 ${
+                        active ? 'ring-2 ring-black ring-offset-2' : 'ring-1 ring-zinc-200'
+                      }`}
+                      style={{
+                        background: look.theme.background_value,
+                        color: look.theme.text_color || '#FFFFFF',
+                        minHeight: '110px',
+                      }}
+                    >
+                      <div>
+                        <span className="text-sm font-black block drop-shadow-sm">{look.name}</span>
+                        <span className="block text-[11px] opacity-75 mt-0.5 leading-snug">{look.desc}</span>
+                      </div>
+                      {active && (
+                        <span className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-black shadow-md">
+                          <Check size={13} strokeWidth={3} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Skip / Use Default — prominent, not buried */}
+              <button
+                type="button"
+                onClick={() => {
+                  applyStarterLook(STARTER_LOOKS[0]);
+                  setStep(3);
+                }}
+                className="w-full rounded-[8px] border border-zinc-300 bg-white py-3 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-black transition shadow-xs"
+              >
+                Skip, use default
+              </button>
+            </div>
+          )}
+
+          {/* ================= STEP 3: GO LIVE — LAUNCH & FEATURE TOUR ================= */}
+          {step === 3 && (
             <div className="flex flex-col items-center gap-5 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
                 <PartyPopper size={26} />
@@ -582,7 +559,7 @@ export default function OnboardingPage() {
 
           {/* ================= NAVIGATION FOOTER ================= */}
           <div className="mt-8 flex items-center justify-between gap-3 border-t border-zinc-200 pt-5">
-            {step > 0 && step < 4 ? (
+            {step > 0 && step < 3 ? (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
@@ -611,7 +588,7 @@ export default function OnboardingPage() {
                 onClick={() => setStep(2)}
                 className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800"
               >
-                Continue to Motion <ArrowRight size={14} />
+                Continue <ArrowRight size={14} />
               </button>
             )}
 
@@ -621,21 +598,11 @@ export default function OnboardingPage() {
                 onClick={() => setStep(3)}
                 className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800"
               >
-                Continue to Links <ArrowRight size={14} />
-              </button>
-            )}
-
-            {step === 3 && (
-              <button
-                type="button"
-                onClick={() => setStep(4)}
-                className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800"
-              >
                 <Sparkles size={14} /> Preview My Page
               </button>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <button
                 type="button"
                 onClick={finish}
@@ -649,7 +616,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Skip Button */}
-        {step < 4 && (
+        {step < 3 && (
           <button
             type="button"
             onClick={finish}
