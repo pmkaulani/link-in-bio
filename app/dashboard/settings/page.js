@@ -168,8 +168,11 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Failed to update username.');
       }
 
-      updateProfile({ username: clean });
-      const successMsg = `Username successfully updated to @${clean}!`;
+      updateProfile({
+        username: clean,
+        ...(data.user?.socials ? { socials: data.user.socials } : {}),
+      });
+      const successMsg = `Username successfully updated to @${clean}! Your URL is now ${APP_DOMAIN}/${clean}`;
       setUsernameFeedback({ msg: successMsg, type: 'success' });
       showToast(successMsg, 'success');
     } catch (err) {
@@ -203,7 +206,7 @@ export default function SettingsPage() {
   async function handleChangePassword(e) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      showToast('New passwords do not match.');
+      showToast('New passwords do not match.', 'error');
       return;
     }
     const passwordChecks = {
@@ -214,7 +217,7 @@ export default function SettingsPage() {
       hasSpecial: /[^A-Za-z0-9]/.test(newPassword),
     };
     if (!Object.values(passwordChecks).every(Boolean)) {
-      showToast('Password must be 8+ chars and include uppercase, lowercase, numbers, and special symbols.');
+      showToast('Password must be 8+ chars and include uppercase, lowercase, numbers, and special symbols.', 'error');
       return;
     }
 
@@ -227,9 +230,9 @@ export default function SettingsPage() {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      showToast('Password changed successfully.');
+      showToast('Password changed successfully.', 'success');
     } catch (err) {
-      showToast(err.message || 'Failed to change password.');
+      showToast(err.message || 'Failed to change password.', 'error');
     } finally {
       setLoading(false);
     }
@@ -237,7 +240,7 @@ export default function SettingsPage() {
 
   async function handleVerify2FA() {
     if (twoFactorCode.length < 6) {
-      showToast('Please enter the 6-digit code from your authenticator app.');
+      showToast('Please enter the 6-digit code from your authenticator app.', 'error');
       return;
     }
 
@@ -250,9 +253,9 @@ export default function SettingsPage() {
       updateProfile({ two_factor_enabled: nextState });
       setShow2FAModal(false);
       setTwoFactorCode('');
-      showToast(nextState ? '2FA enabled successfully.' : '2FA disabled.');
+      showToast(nextState ? '2FA enabled successfully.' : '2FA disabled.', 'success');
     } catch (err) {
-      showToast('Failed to update 2FA.');
+      showToast('Failed to update 2FA.', 'error');
     } finally {
       setLoading(false);
     }
@@ -260,14 +263,14 @@ export default function SettingsPage() {
 
   function handleRevokeSession(sessionId) {
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    showToast('Device session revoked.');
+    showToast('Device session revoked.', 'success');
   }
 
   async function handleSignOutEverywhere() {
     if (!confirm('Are you sure you want to sign out of all other devices?')) return;
     setSessions((prev) => prev.filter((s) => s.isCurrent));
     await callAccountAction({ action: 'sign_out_everywhere' });
-    showToast('Signed out of all other devices.');
+    showToast('Signed out of all other devices.', 'success');
   }
 
   // ── 3. Privacy Handlers ───────────────────────────────────────────────────
@@ -283,7 +286,7 @@ export default function SettingsPage() {
 
     await callAccountAction({ action: 'update_privacy', ...updates });
 
-    showToast('Privacy preferences updated.');
+    showToast('Privacy preferences updated.', 'success');
   }
 
   // ── 4. Data & Export Handlers ─────────────────────────────────────────────
@@ -297,7 +300,7 @@ export default function SettingsPage() {
       a.download = `link-in-bio-${profile?.username || 'backup'}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('JSON backup exported.');
+      showToast('JSON backup exported.', 'success');
       return;
     }
 
@@ -312,7 +315,7 @@ export default function SettingsPage() {
     a.download = `link-in-bio-${profile?.username || 'backup'}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('JSON backup exported.');
+    showToast('JSON backup exported.', 'success');
   }
 
   function handleExportCSV() {
@@ -324,7 +327,7 @@ export default function SettingsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Analytics CSV exported.');
+    showToast('Analytics CSV exported.', 'success');
   }
 
   async function handlePurgeAnalytics() {
@@ -332,9 +335,9 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       await callAccountAction({ action: 'purge_analytics' });
-      showToast('Analytics events purged.');
+      showToast('Analytics events purged.', 'success');
     } catch (err) {
-      showToast('Failed to purge analytics.');
+      showToast('Failed to purge analytics.', 'error');
     } finally {
       setLoading(false);
     }
@@ -348,7 +351,7 @@ export default function SettingsPage() {
 
     await callAccountAction({ action: 'update_privacy', is_disabled: nextState });
 
-    showToast(nextState ? 'Profile unpublished and disabled.' : 'Profile republished.');
+    showToast(nextState ? 'Profile unpublished and disabled.' : 'Profile republished.', 'success');
   }
 
   async function handleToggleDeactivate() {
@@ -360,12 +363,12 @@ export default function SettingsPage() {
 
     await callAccountAction({ action: 'update_privacy', is_deactivated: nextState });
 
-    showToast(nextState ? 'Account deactivated.' : 'Account reactivated.');
+    showToast(nextState ? 'Account deactivated.' : 'Account reactivated.', 'success');
   }
 
   async function handlePermanentlyDelete() {
     if (deleteConfirmText !== profile?.username) {
-      showToast(`Please type "${profile?.username}" to confirm deletion.`);
+      showToast(`Please type "${profile?.username}" to confirm deletion.`, 'error');
       return;
     }
 
@@ -527,6 +530,55 @@ export default function SettingsPage() {
                 </button>
               </div>
             </form>
+
+            {/* Claimed Handles History & Log */}
+            {profile?.socials?._handle_history && profile.socials._handle_history.length > 0 && (
+              <div className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-2.5">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                  Claimed Handles & Availability
+                </span>
+                <p className="text-[11px] text-zinc-500">
+                  Your current and previous handles. When you change a handle, your previous handle is immediately released and becomes available for any other creator to claim.
+                </p>
+                <div className="space-y-1.5 pt-1">
+                  {/* Current Active */}
+                  <div className="flex items-center justify-between p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-black">@{profile.username}</span>
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5">
+                        Current Active
+                      </span>
+                    </div>
+                    <a
+                      href={`/${profile.username}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-black underline"
+                    >
+                      {APP_DOMAIN}/{profile.username} ↗
+                    </a>
+                  </div>
+
+                  {/* Previous Released Handles */}
+                  {profile.socials._handle_history.map((h, i) => (
+                    <div
+                      key={h.handle || i}
+                      className="flex items-center justify-between p-2.5 rounded-[6px] bg-white border border-zinc-200 text-xs text-zinc-600"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-semibold text-zinc-700">@{h.handle}</span>
+                        <span className="rounded-full bg-zinc-100 text-zinc-600 text-[9px] font-semibold px-2 py-0.5">
+                          Released (Available for anyone)
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {h.released_at ? new Date(h.released_at).toLocaleDateString() : 'Previous'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Display Name Form */}
             <form onSubmit={handleSaveDisplayName} className="p-4 rounded-[8px] bg-zinc-50 border border-zinc-200 space-y-2">

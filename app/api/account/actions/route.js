@@ -111,16 +111,21 @@ export async function POST(req) {
         return NextResponse.json({ success: true, message: 'Username is unchanged.', username: clean });
       }
 
-      // Enforce 14-day cooldown limit per username change
-      if (currentProfile?.username_changed_at) {
-        const lastChanged = new Date(currentProfile.username_changed_at).getTime();
+      // Enforce 14-day cooldown limit per username change (stored in socials._handle_changed_at or username_changed_at)
+      const lastChangedTime =
+        currentProfile?.socials?._handle_changed_at || currentProfile?.username_changed_at || null;
+      if (lastChangedTime) {
+        const lastChanged = new Date(lastChangedTime).getTime();
         const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
         const COOLDOWN_DAYS = 14;
         if (daysSince < COOLDOWN_DAYS) {
           const daysRemaining = Math.ceil(COOLDOWN_DAYS - daysSince);
-          return NextResponse.json({
-            error: `Handle changes are limited to once every 14 days to prevent broken links and impersonation. You can change your handle again in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`
-          }, { status: 429 });
+          return NextResponse.json(
+            {
+              error: `Handle changes are limited to once every 14 days to prevent broken links and impersonation. You can change your handle again in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`,
+            },
+            { status: 429 }
+          );
         }
       }
 
@@ -130,7 +135,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'This username is reserved by system administrator.' }, { status: 400 });
       }
 
-      // Check exact collision
+      // Check exact collision against currently active profiles (released handles can be claimed by anyone)
       const { data: existing } = await supabase.from('profiles').select('id, username').eq('username', clean).neq('id', userId).maybeSingle();
       if (existing) {
         return NextResponse.json({ error: 'This username is already taken by another creator.' }, { status: 400 });
@@ -147,28 +152,62 @@ export async function POST(req) {
             return normExisting === normalizedClean && p.username.toLowerCase() !== clean;
           });
           if (conflict) {
-            return NextResponse.json({
-              error: `This handle is too similar to existing creator @${conflict.username}. Please choose a distinct handle to prevent impersonation.`
-            }, { status: 400 });
+            return NextResponse.json(
+              {
+                error: `This handle is too similar to existing creator @${conflict.username}. Please choose a distinct handle to prevent impersonation.`,
+              },
+              { status: 400 }
+            );
           }
         }
       }
 
-      const updateData = {
-        username: clean,
-        username_changed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+      // Maintain handle claim history in socials JSON so previous handles are recorded
+      const oldUsername = currentProfile?.username;
+      const existingHistory = Array.isArray(currentProfile?.socials?._handle_history)
+        ? [...currentProfile.socials._handle_history]
+        : [];
+
+      if (oldUsername && oldUsername !== clean) {
+        if (!existingHistory.some((h) => h.handle === oldUsername)) {
+          existingHistory.unshift({
+            handle: oldUsername,
+            released_at: new Date().toISOString(),
+          });
+        }
+      }
+
+      const updatedSocials = {
+        ...(currentProfile?.socials || {}),
+        _handle_changed_at: new Date().toISOString(),
+        _handle_history: existingHistory.slice(0, 10),
       };
 
+      // Perform update using standard columns that exist across all schemas
       const { data: updated, error } = await supabase
         .from('profiles')
-        .update(updateData)
+        .update({
+          username: clean,
+          socials: updatedSocials,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', userId)
         .select()
         .single();
 
-      if (error) throw error;
-      return NextResponse.json({ success: true, user: updated, username: clean });
+      if (error) {
+        // Fallback: minimal update
+        const { data: fallbackUpdated, error: fallbackError } = await supabase
+          .from('profiles')
+          .update({ username: clean })
+          .eq('id', userId)
+          .select()
+          .single();
+        if (fallbackError) throw fallbackError;
+        return NextResponse.json({ success: true, user: fallbackUpdated, username: clean });
+      }
+
+      return NextResponse.json({ success: true, user: updated, username: clean, history: existingHistory });
     }
 
     // 5. Update Privacy & Profile Flags
