@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { isLocalMode } from '../../../../lib/supabase';
 import { createRequestClient } from '../../../../lib/supabaseServer';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     // ── Auth gate: reject if no verified session ─────────────────────────

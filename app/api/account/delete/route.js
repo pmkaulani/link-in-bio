@@ -3,6 +3,8 @@ import { isLocalMode } from '../../../../lib/supabase';
 import { createRequestClient } from '../../../../lib/supabaseServer';
 import { createAdminClient } from '../../../../lib/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     // ── Verify the caller's identity via their JWT ──────────────────────

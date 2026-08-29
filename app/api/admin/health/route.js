@@ -3,6 +3,8 @@ import { isLocalMode } from '../../../../lib/supabase';
 import { createAdminClient } from '../../../../lib/supabaseAdmin';
 import { verifyAdminUser } from '../../../../lib/adminAuth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
   const adminCheck = await verifyAdminUser(req);
   if (!adminCheck.isAdmin) {

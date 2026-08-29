@@ -227,9 +227,11 @@ create policy "Profiles are selectable by owner or published"
     )
   );
 
+drop policy if exists "Users can insert their own profile" on profiles;
 create policy "Users can insert their own profile"
   on profiles for insert with check (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on profiles;
 create policy "Users can update their own profile"
   on profiles for update using (auth.uid() = id);
 
@@ -255,32 +257,40 @@ create policy "Blocks are selectable by owner or when publicly active"
     )
   );
 
+drop policy if exists "Users can insert their own blocks" on blocks;
 create policy "Users can insert their own blocks"
   on blocks for insert with check (auth.uid() = profile_id);
 
+drop policy if exists "Users can update their own blocks" on blocks;
 create policy "Users can update their own blocks"
   on blocks for update using (auth.uid() = profile_id);
 
+drop policy if exists "Users can delete their own blocks" on blocks;
 create policy "Users can delete their own blocks"
   on blocks for delete using (auth.uid() = profile_id);
 
 -- ── Reports Policies ─────────────────────────────────────────────────────────
+drop policy if exists "Anyone can submit a report" on reports;
 create policy "Anyone can submit a report"
   on reports for insert with check (true);
 
 -- ── Platform Admins Policies ─────────────────────────────────────────────────
+drop policy if exists "Users can check their own admin status" on platform_admins;
 create policy "Users can check their own admin status"
   on platform_admins for select using (auth.uid() = user_id);
 
 -- ── Feature Flags Policies ───────────────────────────────────────────────────
+drop policy if exists "Feature flags are readable by everyone" on feature_flags;
 create policy "Feature flags are readable by everyone"
   on feature_flags for select using (true);
 
 -- ── Platform Settings Policies ───────────────────────────────────────────────
+drop policy if exists "Platform settings are readable by everyone" on platform_settings;
 create policy "Platform settings are readable by everyone"
   on platform_settings for select using (true);
 
 -- ── Reserved Usernames Policies ──────────────────────────────────────────────
+drop policy if exists "Reserved usernames are readable by everyone" on reserved_usernames;
 create policy "Reserved usernames are readable by everyone"
   on reserved_usernames for select using (true);
 
@@ -288,14 +298,17 @@ create policy "Reserved usernames are readable by everyone"
 -- Direct table insertion from public anon clients is disabled.
 -- Analytics ingestion is handled securely via the /api/analytics server route with
 -- validation, rate limiting, and block ownership verification using the service role.
+drop policy if exists "Owners can read their own analytics" on analytics_events;
 create policy "Owners can read their own analytics"
   on analytics_events for select using (auth.uid() = profile_id);
 
 -- ── Custom Domains Policies ──────────────────────────────────────────────────
 -- Only the owner can select and manage their own domain row.
 -- Verification tokens are NEVER exposed to anonymous public select.
+drop policy if exists "Owners can manage their own custom domain" on custom_domains;
 create policy "Owners can manage their own custom domain"
   on custom_domains for all using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
+
 
 -- ── Secure Custom Domain Resolver Function (RPC) ─────────────────────────────
 -- Returns only the associated username for verified domains on active profiles.
