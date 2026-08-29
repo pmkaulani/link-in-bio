@@ -175,7 +175,7 @@ function LinkEditor({ data, onUpdate }) {
             type="checkbox"
             checked={data.is_featured || false}
             onChange={(e) => onUpdate({ is_featured: e.target.checked })}
-            className="rounded border-zinc-300 text-black focus:ring-black"
+            className="h-4 w-4 rounded border-zinc-300 accent-black focus:ring-black cursor-pointer"
           />
           Featured link (highlighted on public page)
         </label>

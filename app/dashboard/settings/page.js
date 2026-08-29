@@ -52,35 +52,8 @@ export default function SettingsPage() {
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [is2FAEnabled, setIs2FAEnabled] = useState(Boolean(profile?.two_factor_enabled));
-  const [sessions, setSessions] = useState([
-    {
-      id: 'sess-current',
-      device: 'Windows PC (Current Session)',
-      browser: 'Chrome 128.0',
-      ip: '197.237.142.18',
-      location: 'Nairobi, Kenya',
-      lastActive: 'Active now',
-      isCurrent: true,
-    },
-    {
-      id: 'sess-2',
-      device: 'iPhone 15 Pro',
-      browser: 'Mobile Safari 17.5',
-      ip: '102.164.91.44',
-      location: 'Nairobi, Kenya',
-      lastActive: '2 hours ago',
-      isCurrent: false,
-    },
-    {
-      id: 'sess-3',
-      device: 'MacBook Pro 16"',
-      browser: 'Safari 18.0',
-      ip: '197.237.140.12',
-      location: 'Mombasa, Kenya',
-      lastActive: '3 days ago',
-      isCurrent: false,
-    },
-  ]);
+  const [sessions, setSessions] = useState([]);
+  const [authProviders, setAuthProviders] = useState([]);
 
   // Privacy tab states
   const [isPrivate, setIsPrivate] = useState(Boolean(profile?.is_private));
@@ -104,6 +77,47 @@ export default function SettingsPage() {
     setIsAccountDeactivated(Boolean(profile?.is_deactivated));
     setIs2FAEnabled(Boolean(profile?.two_factor_enabled));
   }, [profile]);
+
+  useEffect(() => {
+    // Detect real connected auth providers
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        if (!emailInput && user.email) setEmailInput(user.email);
+        const providers = user.app_metadata?.providers || (user.app_metadata?.provider ? [user.app_metadata.provider] : []);
+        setAuthProviders(providers);
+      }
+    });
+
+    // Detect actual current client device truthfully
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent;
+      let device = 'Desktop Device';
+      let browser = 'Browser';
+
+      if (/iPhone/i.test(ua)) device = 'iPhone';
+      else if (/iPad/i.test(ua)) device = 'iPad';
+      else if (/Android/i.test(ua)) device = 'Android Device';
+      else if (/Macintosh|Mac OS X/i.test(ua)) device = 'Mac';
+      else if (/Windows/i.test(ua)) device = 'Windows PC';
+      else if (/Linux/i.test(ua)) device = 'Linux Device';
+
+      if (/Chrome/i.test(ua) && !/Edge|Edg|OPR/i.test(ua)) browser = 'Chrome';
+      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+      else if (/Firefox/i.test(ua)) browser = 'Firefox';
+      else if (/Edg/i.test(ua)) browser = 'Edge';
+      else if (/OPR|Opera/i.test(ua)) browser = 'Opera';
+
+      setSessions([
+        {
+          id: 'sess-current',
+          device: `${device} (Current Device)`,
+          browser: browser,
+          lastActive: 'Active now',
+          isCurrent: true,
+        },
+      ]);
+    }
+  }, [emailInput]);
 
   function showToast(msg) {
     setToastMsg(msg);
@@ -442,16 +456,12 @@ export default function SettingsPage() {
             </div>
 
             {/* Username Form */}
-            <form onSubmit={handleSaveUsername} className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-3">
+            <form onSubmit={handleSaveUsername} className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-2.5">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Username / Handle</span>
-                <div className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-white border border-zinc-200 shadow-2xs text-[11px] font-mono">
-                  <Globe size={13} className="text-zinc-400 shrink-0" />
-                  <span className="text-zinc-400 font-semibold">{APP_DOMAIN}/</span>
-                  <span className="text-black font-black">{profile?.username || 'yourname'}</span>
-                </div>
+                <p className="text-[11px] text-zinc-500 mt-0.5">Your unique public creator address on {APP_DOMAIN}</p>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
                 <div className="flex flex-1 items-center overflow-hidden rounded-[8px] border border-zinc-300 bg-white focus-within:border-black focus-within:ring-1 focus-within:ring-black shadow-xs">
                   <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3 py-2 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
                     <Globe size={12} className="text-zinc-400" />
@@ -514,12 +524,22 @@ export default function SettingsPage() {
                   </span>
                   <div>
                     <span className="block text-xs font-bold text-black">Email & Password</span>
-                    <span className="block text-[10px] text-zinc-500">Primary authentication method</span>
+                    <span className="block text-[10px] text-zinc-500">
+                      {authProviders.includes('email') || !authProviders.includes('google')
+                        ? 'Primary authentication method'
+                        : 'Standard credentials login'}
+                    </span>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] px-2.5 py-1 shrink-0">
-                  Active
-                </span>
+                {authProviders.includes('email') || !authProviders.includes('google') ? (
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] px-2.5 py-1 shrink-0">
+                    Active
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-zinc-200 text-zinc-700 font-bold text-[10px] px-2.5 py-1 shrink-0">
+                    Available
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-3.5 rounded-[8px] border border-zinc-200 bg-zinc-50">
@@ -529,16 +549,31 @@ export default function SettingsPage() {
                   </span>
                   <div>
                     <span className="block text-xs font-bold text-black">Google Account</span>
-                    <span className="block text-[10px] text-zinc-500">Single sign-on ready</span>
+                    <span className="block text-[10px] text-zinc-500">
+                      {authProviders.includes('google')
+                        ? 'Authenticated via Google OAuth'
+                        : 'Single sign-on ready'}
+                    </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => showToast('Google OAuth connected.')}
-                  className="rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-100 shadow-xs shrink-0"
-                >
-                  Connect
-                </button>
+                {authProviders.includes('google') ? (
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] px-2.5 py-1 shrink-0">
+                    Connected
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: { redirectTo: `${window.location.origin}/auth/callback` },
+                      });
+                    }}
+                    className="rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-100 shadow-xs shrink-0"
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -719,40 +754,46 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2.5 pt-1">
-              {sessions.map((sess) => (
-                <div
-                  key={sess.id}
-                  className="flex items-center justify-between gap-3 p-3.5 rounded-[8px] border border-zinc-200 bg-zinc-50"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-white border border-zinc-200 text-black shadow-xs shrink-0">
-                      {sess.device.includes('iPhone') ? <Smartphone size={16} /> : <Laptop size={16} />}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-black">{sess.device}</span>
-                        {sess.isCurrent && (
-                          <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
-                            This Device
-                          </span>
-                        )}
-                      </div>
-                      <span className="block text-[10px] text-zinc-500 font-mono truncate mt-0.5">
-                        {sess.browser} • {sess.location} • {sess.lastActive}
-                      </span>
-                    </div>
-                  </div>
-
-                  {!sess.isCurrent && (
-                    <button
-                      onClick={() => handleRevokeSession(sess.id)}
-                      className="rounded-[8px] border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50 transition shrink-0"
-                    >
-                      Revoke
-                    </button>
-                  )}
+              {sessions.length === 0 ? (
+                <div className="p-4 rounded-[8px] border border-zinc-200 bg-zinc-50 text-xs text-zinc-600 font-medium">
+                  1 active session • Current Device
                 </div>
-              ))}
+              ) : (
+                sessions.map((sess) => (
+                  <div
+                    key={sess.id}
+                    className="flex items-center justify-between gap-3 p-3.5 rounded-[8px] border border-zinc-200 bg-zinc-50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-white border border-zinc-200 text-black shadow-xs shrink-0">
+                        {sess.device.includes('iPhone') || sess.device.includes('Android') ? <Smartphone size={16} /> : <Laptop size={16} />}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-black">{sess.device}</span>
+                          {sess.isCurrent && (
+                            <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
+                              This Device
+                            </span>
+                          )}
+                        </div>
+                        <span className="block text-[10px] text-zinc-500 font-mono truncate mt-0.5">
+                          {sess.browser} • {sess.lastActive}
+                        </span>
+                      </div>
+                    </div>
+
+                    {!sess.isCurrent && (
+                      <button
+                        onClick={() => handleRevokeSession(sess.id)}
+                        className="rounded-[8px] border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50 transition shrink-0"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
