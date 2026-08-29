@@ -26,7 +26,9 @@ export default function SocialIconsManager() {
   const [isOpen, setIsOpen] = useState(false);
 
   const currentSocials = profile?.socials && typeof profile.socials === 'object' ? profile.socials : {};
-  const activeEntries = Object.entries(currentSocials).filter(([, url]) => Boolean(url && url.trim()));
+  const activeEntries = Object.entries(currentSocials).filter(
+    ([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim())
+  );
 
   function handleOpenEdit(socialId) {
     const existing = currentSocials[socialId] || '';

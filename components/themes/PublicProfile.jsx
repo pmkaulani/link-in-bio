@@ -95,7 +95,7 @@ function AboutAccountModal({ profile, isOpen, onClose }) {
   const joinDate = profile.created_at ? new Date(profile.created_at) : new Date();
   const formattedMonthYear = joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const socialsList = profile.socials && typeof profile.socials === 'object'
-    ? Object.keys(profile.socials).filter((k) => Boolean(profile.socials[k]))
+    ? Object.keys(profile.socials).filter((k) => !k.startsWith('_') && typeof profile.socials[k] === 'string' && profile.socials[k].trim())
     : [];
 
   return (
@@ -1383,7 +1383,7 @@ export default function PublicProfile({ profile, blocks }) {
           {profile?.socials && typeof profile.socials === 'object' && (
             <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
               {Object.entries(profile.socials)
-                .filter(([, url]) => Boolean(url && url.trim()))
+                .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
                 .map(([name, url]) => {
                   const icon = ICONS[name] || ICONS.link;
                   return (

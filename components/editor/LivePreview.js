@@ -240,7 +240,9 @@ function PreviewCallout({ data, profile }) {
 
 function PreviewSocialsBar({ profile }) {
   if (!profile?.socials || typeof profile.socials !== 'object') return null;
-  const list = Object.entries(profile.socials).filter(([, url]) => Boolean(url));
+  const list = Object.entries(profile.socials).filter(
+    ([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim())
+  );
   if (list.length === 0) return null;
 
   return (
@@ -417,7 +419,7 @@ export default function LivePreview({ profile, blocks }) {
             {profile?.socials && typeof profile.socials === 'object' && (
               <div className="mt-3.5 flex flex-wrap justify-center gap-2.5">
                 {Object.entries(profile.socials)
-                  .filter(([, url]) => Boolean(url && url.trim()))
+                  .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
                   .map(([name, url]) => {
                     const icon = ICONS[name] || ICONS.link;
                     return (
