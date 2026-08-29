@@ -2,15 +2,16 @@ import { supabase, isLocalMode } from '../../lib/supabase';
 import PublicProfile from '../../components/themes/PublicProfile';
 import LocalPublicPage from '../../components/LocalPublicPage';
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
 
-// generateMetadata and the page component both need the profile — cache()
-// dedupes them into a single DB round trip per request instead of two.
-const getProfile = cache(async (username) => {
-  if (isLocalMode) return null; // server can't read localStorage
-  const { data } = await supabase.from('profiles').select('*').eq('username', username).single();
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+async function getProfile(username) {
+  if (isLocalMode) return null;
+  const { data } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
   return data || null;
-});
+}
 
 export async function generateMetadata({ params }) {
   if (isLocalMode) return { title: 'LinkBio' };
@@ -81,18 +82,15 @@ export default async function PublicPage({ params }) {
     return notFound();
   }
 
-  // Use published snapshot for public visitors so draft edits aren't pushed prematurely
+  // Use published snapshot for public visitors, or fallback to live profile/blocks
   const effectiveProfile = profile.published_profile || profile;
-  const { data: blocks } = await supabase.from('blocks').select('*').eq('profile_id', profile.id).order('position');
+  const { data: dbBlocks } = await supabase.from('blocks').select('*').eq('profile_id', profile.id).order('position');
 
-  let finalBlocks =
-    profile.published_blocks !== undefined && profile.published_blocks !== null
-      ? profile.published_blocks
-      : (blocks || []);
+  let finalBlocks = Array.isArray(profile.published_blocks) && profile.published_blocks.length > 0
+    ? profile.published_blocks
+    : (dbBlocks && dbBlocks.length > 0 ? dbBlocks : (profile.published_blocks || []));
 
   // Server-side filtering: only show visible, non-disabled blocks to public visitors.
-  // (The RLS policy enforces this at the DB level, but defense-in-depth here ensures
-  // any data that leaked through published_blocks snapshots is also filtered.)
   finalBlocks = finalBlocks.filter((b) => b.is_visible !== false && b.is_disabled !== true);
 
   // Legacy fallback: only hit the old `links` table if this account predates the

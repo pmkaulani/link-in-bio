@@ -17,8 +17,20 @@ import { Sparkles, Palette, Type, Layers, Film, Check } from 'lucide-react';
 import CustomSelect from '../../../components/CustomSelect';
 
 export default function ThemePage() {
-  const { profile, updateProfile, blocks, updateBlock, loading } = useDashboard();
+  const { profile, updateProfile, blocks, updateBlock, loading, hasUnpostedChanges, publishChanges } = useDashboard();
   const [activeTab, setActiveTab] = useState('themes'); // 'themes' | 'typography' | 'buttons' | 'background' | 'animations'
+  const [posting, setPosting] = useState(false);
+  const [postedSuccess, setPostedSuccess] = useState(false);
+
+  async function handlePost() {
+    setPosting(true);
+    await publishChanges();
+    setTimeout(() => {
+      setPosting(false);
+      setPostedSuccess(true);
+      setTimeout(() => setPostedSuccess(false), 5000);
+    }, 400);
+  }
 
   if (loading || !profile) {
     return (
@@ -81,10 +93,69 @@ export default function ThemePage() {
 
   return (
     <div className="space-y-6 pb-20 text-black">
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-black">Appearance & Canvas</h1>
-        <p className="mt-1 text-xs text-zinc-500">Pick any theme, color gradient, or motion effect for your live profile.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black tracking-tight text-black">Appearance & Canvas</h1>
+            {hasUnpostedChanges ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-300 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
+                Draft styling
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800">
+                <Check size={12} className="text-black" />
+                Theme live
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-zinc-500">Pick any theme, color gradient, or motion effect for your live profile.</p>
+        </div>
+
+        {/* Post Changes Button */}
+        <button
+          onClick={handlePost}
+          disabled={posting}
+          className="flex shrink-0 items-center justify-center gap-2 rounded-[4px] bg-black px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60"
+          title={hasUnpostedChanges ? 'Publish your theme edits live' : 'All theme edits are already live'}
+        >
+          {posting ? (
+            <>
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Posting...
+            </>
+          ) : postedSuccess ? (
+            <>
+              <Check size={14} />
+              Theme Posted Live!
+            </>
+          ) : (
+            <>
+              <Sparkles size={14} />
+              Post changes live
+            </>
+          )}
+        </button>
       </div>
+
+      {postedSuccess && (
+        <div className="flex items-center justify-between gap-3 rounded-[4px] border border-zinc-200 bg-zinc-100 px-4 py-3 text-xs font-semibold text-black animate-profile-in">
+          <div className="flex items-center gap-2">
+            <Check size={16} className="text-black shrink-0" />
+            <span>Appearance updates are posted live!</span>
+          </div>
+          {profile?.username && (
+            <a
+              href={`/${profile.username}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-bold text-black underline"
+            >
+              View live page ↗
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Sub-tabs */}
       <div className="flex gap-1.5 overflow-x-auto rounded-[8px] bg-zinc-100 p-1.5">

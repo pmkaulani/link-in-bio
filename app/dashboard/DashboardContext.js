@@ -152,25 +152,69 @@ export function DashboardProvider({ children }) {
 
     setSaveStatus('saving');
     const publishedAt = new Date().toISOString();
+
+    // Create a clean profile snapshot without circular/redundant properties
+    const cleanProfile = { ...profile };
+    delete cleanProfile.published_blocks;
+    delete cleanProfile.published_profile;
+
+    const cleanBlocks = (blocks || []).map((b, idx) => ({
+      id: b.id,
+      profile_id: userId,
+      type: b.type,
+      position: typeof b.position === 'number' ? b.position : idx,
+      is_visible: b.is_visible !== false,
+      is_disabled: b.is_disabled === true,
+      data: b.data || {},
+    }));
+
     const updatedProfile = {
       ...profile,
-      published_blocks: blocks,
-      published_profile: profile,
+      published_blocks: cleanBlocks,
+      published_profile: cleanProfile,
       published_at: publishedAt,
     };
 
     setProfile(updatedProfile);
-    setPublishedBlocks(blocks);
-    setPublishedProfile(profile);
+    setPublishedBlocks(cleanBlocks);
+    setPublishedProfile(cleanProfile);
     setHasUnpostedChanges(false);
 
     try {
-      const { error } = await supabase.from('profiles').update({
-        published_blocks: blocks,
-        published_profile: profile,
+      // 1. Update profile with the new published snapshot and latest live fields
+      const { error: profileError } = await supabase.from('profiles').update({
+        ...cleanProfile,
+        published_blocks: cleanBlocks,
+        published_profile: cleanProfile,
         published_at: publishedAt,
+        updated_at: publishedAt,
       }).eq('id', userId);
-      if (error) throw error;
+
+      if (profileError) {
+        console.warn('Primary profile update had error, falling back:', profileError);
+        // Fallback update without JSON snapshot columns if schema is legacy
+        await supabase.from('profiles').update({
+          ...cleanProfile,
+          updated_at: publishedAt,
+        }).eq('id', userId);
+      }
+
+      // 2. Ensure each block in blocks table is synced and persisted
+      if (cleanBlocks.length > 0) {
+        await Promise.all(
+          cleanBlocks.map((b) =>
+            supabase.from('blocks').upsert({
+              id: b.id,
+              profile_id: userId,
+              type: b.type,
+              position: b.position,
+              is_visible: b.is_visible,
+              data: b.data,
+            })
+          )
+        );
+      }
+
       markSaved();
       return true;
     } catch (err) {

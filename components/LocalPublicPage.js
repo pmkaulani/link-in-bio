@@ -28,11 +28,13 @@ export default function LocalPublicPage({ username }) {
           return;
         }
 
-        // Only render published state to public visitors
+        // Only render published state to public visitors, with DB fallback
         const publishedProfile = found.published_profile || found;
-        let publishedBlocks = found.published_blocks;
+        let publishedBlocks = Array.isArray(found.published_blocks) && found.published_blocks.length > 0
+          ? found.published_blocks
+          : null;
 
-        if (publishedBlocks === undefined || publishedBlocks === null) {
+        if (!publishedBlocks) {
           const { data: dbBlocks } = await supabase
             .from('blocks')
             .select('*')
@@ -42,7 +44,7 @@ export default function LocalPublicPage({ username }) {
         }
 
         setProfile(publishedProfile);
-        setBlocks(publishedBlocks);
+        setBlocks(publishedBlocks.filter((b) => b.is_visible !== false && b.is_disabled !== true));
         setLoading(false);
       } catch (err) {
         console.error('Failed to load profile:', err);
