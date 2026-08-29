@@ -12,45 +12,34 @@ import {
 const VARIANT_CONFIGS = {
   info: {
     icon: Info,
-    containerClass: 'border-zinc-800 bg-zinc-900/90 text-zinc-200 shadow-sm',
-    iconClass: 'text-zinc-400',
-    titleClass: 'text-white',
+    containerClass: 'border-zinc-300 bg-zinc-50 text-zinc-800 shadow-sm',
+    badgeClass: 'bg-zinc-200 text-zinc-800',
+    titleClass: 'text-black',
     role: 'status',
   },
   success: {
     icon: CheckCircle2,
-    containerClass: 'border-zinc-800 bg-zinc-900/90 text-zinc-200 shadow-sm',
-    iconClass: 'text-emerald-400',
-    titleClass: 'text-white',
+    containerClass: 'border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm',
+    badgeClass: 'bg-emerald-100 text-emerald-700',
+    titleClass: 'text-emerald-950',
     role: 'status',
   },
   warning: {
     icon: AlertTriangle,
-    containerClass: 'border-amber-900/40 bg-amber-950/20 text-amber-200 shadow-sm',
-    iconClass: 'text-amber-400',
-    titleClass: 'text-amber-100',
+    containerClass: 'border-amber-200 bg-amber-50 text-amber-900 shadow-sm',
+    badgeClass: 'bg-amber-100 text-amber-700',
+    titleClass: 'text-amber-950',
     role: 'alert',
   },
   error: {
     icon: AlertOctagon,
-    containerClass: 'border-rose-900/40 bg-rose-950/20 text-rose-200 shadow-sm',
-    iconClass: 'text-rose-400',
-    titleClass: 'text-rose-100',
+    containerClass: 'border-red-200 bg-red-50 text-red-900 shadow-sm',
+    badgeClass: 'bg-red-100 text-red-700',
+    titleClass: 'text-red-950',
     role: 'alert',
   },
 };
 
-/**
- * Accessible, styled Alert component supporting info, success, warning, and error states.
- *
- * @param {Object} props
- * @param {'info' | 'success' | 'warning' | 'error'} [props.variant='info']
- * @param {string} [props.title]
- * @param {React.ReactNode} props.children
- * @param {() => void} [props.onClose]
- * @param {boolean} [props.dismissible=false]
- * @param {string} [props.className]
- */
 export default function Alert({
   variant = 'info',
   title,
@@ -74,17 +63,19 @@ export default function Alert({
   return (
     <div
       role={config.role}
-      className={`relative flex items-start gap-3 rounded-2xl border p-4 text-xs md:text-sm backdrop-blur-md transition-all ${config.containerClass} ${className}`}
+      className={`relative flex items-start gap-3.5 rounded-2xl border p-4 sm:p-5 text-xs sm:text-sm font-medium transition-all ${config.containerClass} ${className}`}
     >
-      <IconComponent size={18} className={`shrink-0 mt-0.5 ${config.iconClass}`} />
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${config.badgeClass}`}>
+        <IconComponent size={20} />
+      </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pt-0.5">
         {title && (
-          <h4 className={`font-semibold tracking-tight mb-1 ${config.titleClass}`}>
+          <h4 className={`text-sm sm:text-base font-bold tracking-tight mb-1 ${config.titleClass}`}>
             {title}
           </h4>
         )}
-        <div className="leading-relaxed opacity-90">{children}</div>
+        <div className="leading-relaxed">{children}</div>
       </div>
 
       {(dismissible || onClose) && (
@@ -92,9 +83,9 @@ export default function Alert({
           type="button"
           onClick={handleDismiss}
           aria-label="Dismiss notification"
-          className="shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg opacity-60 hover:opacity-100 hover:bg-white/10 transition-all"
+          className="shrink-0 -mr-1 -mt-1 p-2 rounded-lg opacity-60 hover:opacity-100 hover:bg-black/5 transition-all"
         >
-          <X size={15} />
+          <X size={16} />
         </button>
       )}
     </div>

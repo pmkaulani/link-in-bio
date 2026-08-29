@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboard } from '../DashboardContext';
-import { supabase, isLocalMode } from '../../../lib/supabase';
+import { supabase, isLocalMode, isSupabaseConfigured } from '../../../lib/supabase';
 import {
   User,
   Shield,
@@ -20,6 +20,7 @@ import {
   AlertOctagon,
   AlertTriangle,
   LogOut,
+  X,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../../lib/constants';
 
@@ -36,10 +37,12 @@ export default function SettingsPage() {
   const { profile, updateProfile, userId } = useDashboard();
   const [activeTab, setActiveTab] = useState('account');
   const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState('success'); // 'success' | 'error' | 'info'
   const [loading, setLoading] = useState(false);
 
   // Account tab states
   const [usernameInput, setUsernameInput] = useState(profile?.username || '');
+  const [usernameFeedback, setUsernameFeedback] = useState({ msg: '', type: '' });
   const [displayNameInput, setDisplayNameInput] = useState(profile?.display_name || '');
   const [emailInput, setEmailInput] = useState(profile?.email || '');
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -119,9 +122,10 @@ export default function SettingsPage() {
     }
   }, [emailInput]);
 
-  function showToast(msg) {
+  function showToast(msg, type = 'success') {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3500);
+    setToastType(type);
+    setTimeout(() => setToastMsg(''), 5000);
   }
 
   // ── Helper: Authenticated API caller ──────────────────────────────────────
@@ -147,9 +151,12 @@ export default function SettingsPage() {
   // ── 1. Account Handlers ───────────────────────────────────────────────────
   async function handleSaveUsername(e) {
     e.preventDefault();
+    setUsernameFeedback({ msg: '', type: '' });
     const clean = usernameInput.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
     if (!clean || clean.length < 3) {
-      showToast('Username must be at least 3 characters.');
+      const err = 'Username must be at least 3 characters.';
+      setUsernameFeedback({ msg: err, type: 'error' });
+      showToast(err, 'error');
       return;
     }
 
@@ -162,9 +169,13 @@ export default function SettingsPage() {
       }
 
       updateProfile({ username: clean });
-      showToast(`Username updated to @${clean}.`);
+      const successMsg = `Username successfully updated to @${clean}!`;
+      setUsernameFeedback({ msg: successMsg, type: 'success' });
+      showToast(successMsg, 'success');
     } catch (err) {
-      showToast(err.message || 'Error updating username.');
+      const errMsg = err.message || 'Error updating username.';
+      setUsernameFeedback({ msg: errMsg, type: 'error' });
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -173,19 +184,19 @@ export default function SettingsPage() {
   async function handleSaveDisplayName(e) {
     e.preventDefault();
     updateProfile({ display_name: displayNameInput.trim() });
-    showToast('Display name updated.');
+    showToast('Display name updated.', 'success');
   }
 
   function handleSaveEmail(e) {
     e.preventDefault();
     if (!newEmailInput || !newEmailInput.includes('@')) {
-      showToast('Please enter a valid email address.');
+      showToast('Please enter a valid email address.', 'error');
       return;
     }
     setEmailInput(newEmailInput);
     updateProfile({ email: newEmailInput });
     setShowEmailModal(false);
-    showToast('Verification link sent to new email.');
+    showToast('Verification link sent to new email.', 'success');
   }
 
   // ── 2. Security Handlers ───────────────────────────────────────────────────
@@ -373,7 +384,7 @@ export default function SettingsPage() {
 
       router.push('/');
     } catch (err) {
-      showToast(err.message || 'Failed to delete account.');
+      showToast(err.message || 'Failed to delete account.', 'error');
       setLoading(false);
     }
   }
@@ -382,9 +393,25 @@ export default function SettingsPage() {
     <div className="space-y-6 pb-24 max-w-4xl">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-black px-4 py-3 text-xs font-black text-white shadow-2xl animate-profile-in border border-zinc-800 max-w-[90vw]">
-          <CheckCircle2 size={16} className="text-white shrink-0" />
-          <span className="truncate">{toastMsg}</span>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-black px-5 py-4 text-sm font-bold text-white shadow-2xl animate-profile-in border border-zinc-700 max-w-[90vw] sm:max-w-md">
+          {toastType === 'error' ? (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
+              <AlertTriangle size={18} />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle2 size={18} />
+            </div>
+          )}
+          <span className="flex-1 text-xs sm:text-sm leading-snug">{toastMsg}</span>
+          <button
+            type="button"
+            onClick={() => setToastMsg('')}
+            className="text-zinc-400 hover:text-white p-1 rounded-lg transition shrink-0"
+            aria-label="Close notification"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
@@ -418,23 +445,23 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {/* ── TAB 1: ACCOUNT ─────────────────────────────────────────────────── */}
+      {/* ── TAB 1: ACCOUNT & IDENTIFIERS ── */}
       {activeTab === 'account' && (
         <div className="space-y-6 animate-profile-in">
           {/* Account Overview Card */}
           <div className="py-6 border-t border-zinc-200 space-y-4">
             <h2 className="text-xs font-bold uppercase tracking-wider text-black flex items-center gap-2">
               <User size={14} className="text-black" />
-              Account Credentials
+              Creator Identity & Handle
             </h2>
 
             {/* Email Address */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[8px] bg-zinc-50 border border-zinc-200">
-              <div className="space-y-1">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Primary Email</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm text-black">{emailInput}</span>
-                  <span className="inline-flex items-center rounded-full bg-black text-white px-2 py-0.5 text-[9px] font-black">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[10px] bg-zinc-50 border border-zinc-200">
+              <div className="min-w-0">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Account Email</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-mono font-bold text-black truncate">{emailInput || 'No email set'}</span>
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
                     Verified
                   </span>
                 </div>
@@ -451,11 +478,29 @@ export default function SettingsPage() {
             </div>
 
             {/* Username Form */}
-            <form onSubmit={handleSaveUsername} className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-2.5">
+            <form onSubmit={handleSaveUsername} className="p-4 rounded-[10px] bg-zinc-50 border border-zinc-200 space-y-3">
               <div>
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Username / Handle</span>
                 <p className="text-[11px] text-zinc-500 mt-0.5">Your unique public creator address on {APP_DOMAIN}</p>
               </div>
+
+              {usernameFeedback.msg && (
+                <div
+                  className={`flex items-start gap-2.5 p-3.5 rounded-[8px] text-xs font-bold border animate-profile-in ${
+                    usernameFeedback.type === 'error'
+                      ? 'bg-red-50 text-red-800 border-red-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  }`}
+                >
+                  {usernameFeedback.type === 'error' ? (
+                    <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                  )}
+                  <span className="leading-snug">{usernameFeedback.msg}</span>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
                 <div className="flex flex-1 items-center overflow-hidden rounded-[8px] border border-zinc-300 bg-white focus-within:border-black focus-within:ring-1 focus-within:ring-black shadow-xs">
                   <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3 py-2 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
@@ -465,7 +510,10 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+                    onChange={(e) => {
+                      setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''));
+                      if (usernameFeedback.msg) setUsernameFeedback({ msg: '', type: '' });
+                    }}
                     className="w-full bg-transparent px-2.5 py-2 text-xs font-mono font-bold text-black outline-none"
                     placeholder="yourname"
                   />
