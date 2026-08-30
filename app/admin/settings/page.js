@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../../../lib/adminApi';
 import {
   Flag,
   Lock,
@@ -19,7 +20,7 @@ export default function AdminSettingsPage() {
 
   async function loadData() {
     try {
-      const res = await fetch('/api/admin/settings');
+      const res = await adminFetch('/api/admin/settings');
       const data = await res.json();
       if (data.success) {
         setFlags(data.flags || []);
@@ -44,9 +45,8 @@ export default function AdminSettingsPage() {
 
   async function handleToggleFlag(flagName, currentVal) {
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await adminFetch('/api/admin/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle_flag', flagName, enabled: !currentVal }),
       });
       const data = await res.json();
@@ -64,9 +64,8 @@ export default function AdminSettingsPage() {
     if (!newUsername.trim()) return;
 
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await adminFetch('/api/admin/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'add_reserved_username',
           username: newUsername.trim(),
@@ -89,9 +88,8 @@ export default function AdminSettingsPage() {
     if (!confirm(`Allow registration of username '${username}'?`)) return;
 
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await adminFetch('/api/admin/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'remove_reserved_username', username }),
       });
       const data = await res.json();

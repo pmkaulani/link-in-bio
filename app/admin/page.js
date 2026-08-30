@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { adminFetch } from '../../lib/adminApi';
 import {
   Users,
   ShieldAlert,
@@ -21,7 +22,7 @@ export default function AdminOverviewPage() {
 
   async function loadStats() {
     try {
-      const res = await fetch('/api/admin/stats');
+      const res = await adminFetch('/api/admin/stats');
       const data = await res.json();
       if (data.success && data.stats) {
         setStats(data.stats);

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { adminFetch } from '../../../lib/adminApi';
 import { Search, RefreshCw } from 'lucide-react';
 
 export default function AdminAuditPage() {
@@ -9,7 +10,7 @@ export default function AdminAuditPage() {
 
   async function loadLogs() {
     try {
-      const res = await fetch('/api/admin/audit');
+      const res = await adminFetch('/api/admin/audit');
       const data = await res.json();
       if (data.success) {
         setLogs(data.logs || []);

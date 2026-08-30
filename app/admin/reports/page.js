@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { adminFetch } from '../../../lib/adminApi';
 import {
   CheckCircle2,
   XCircle,
@@ -26,7 +27,7 @@ export default function AdminReportsPage() {
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (priorityFilter !== 'all') params.set('priority', priorityFilter);
 
-      const res = await fetch(`/api/admin/reports?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/reports?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setReports(data.reports || []);
@@ -52,9 +53,8 @@ export default function AdminReportsPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/reports', {
+      const res = await adminFetch('/api/admin/reports', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reportId,
           status: nextStatus,

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { adminFetch } from '../../../lib/adminApi';
 import {
   Search,
   ShieldCheck,
@@ -25,7 +26,7 @@ export default function AdminUsersPage() {
       if (search) params.set('q', search);
       if (statusFilter !== 'all') params.set('status', statusFilter);
 
-      const res = await fetch(`/api/admin/users?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/users?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setUsers(data.users || []);
@@ -55,9 +56,8 @@ export default function AdminUsersPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await adminFetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_status', userId, status: nextStatus, reason }),
       });
       const data = await res.json();
@@ -78,9 +78,8 @@ export default function AdminUsersPage() {
   async function handleToggleVerify(userId, currentVal) {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await adminFetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle_verified', userId, is_verified: !currentVal }),
       });
       const data = await res.json();
@@ -103,9 +102,8 @@ export default function AdminUsersPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await adminFetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete_user', userId, reason: 'Admin deletion' }),
       });
       const data = await res.json();

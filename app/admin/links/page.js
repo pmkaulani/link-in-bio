@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { adminFetch } from '../../../lib/adminApi';
 import {
   Search,
   CheckCircle2,
@@ -21,7 +22,7 @@ export default function AdminLinksPage() {
       if (search) params.set('q', search);
       if (filter !== 'all') params.set('filter', filter);
 
-      const res = await fetch(`/api/admin/links?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/links?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setLinks(data.links || []);
@@ -47,10 +48,9 @@ export default function AdminLinksPage() {
     if (!currentDisabled && reason === null) return;
 
     try {
-      const res = await fetch('/api/admin/links', {
+      const res = await adminFetch('/api/admin/links', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockId, is_disabled: !currentDisabled, reason }),
+        body: JSON.stringify({ blockId, disabled: !currentDisabled, reason }),
       });
       const data = await res.json();
       if (data.success) {
