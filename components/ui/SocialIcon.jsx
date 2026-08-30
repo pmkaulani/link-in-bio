@@ -113,15 +113,21 @@ const SVG_ICONS = {
 };
 
 export default function SocialIcon({ name, className = '', style = {} }) {
-  let iconKey = (name || '').toLowerCase().replace(/^(fa-brands-|fa-solid-|fa-regular-|fa-)/, '');
+  // Handle full FA class strings like "fa-brands fa-tiktok" or "fa-solid fa-globe"
+  // Split on whitespace, take the last token, then strip the "fa-" prefix
+  const parts = (name || '').toLowerCase().trim().split(/\s+/);
+  let iconKey = parts[parts.length - 1].replace(/^fa-/, '');
+
+  // Alias map for FA variant names → our SVG keys
   if (iconKey === 'x' || iconKey === 'x-twitter') iconKey = 'twitter';
   if (iconKey === 'facebook-f') iconKey = 'facebook';
   if (iconKey === 'linkedin-in') iconKey = 'linkedin';
   if (iconKey === 'bag-shopping') iconKey = 'store';
   if (iconKey === 'envelope') iconKey = 'email';
   if (iconKey === 'arrow-trend-up') iconKey = 'trending';
+  if (iconKey === 'arrow-up-right-from-square') iconKey = 'link';
 
-  const icon = SVG_ICONS[iconKey] || SVG_ICONS[name] || SVG_ICONS.link;
+  const icon = SVG_ICONS[iconKey] || SVG_ICONS.link;
   return (
     <span className={`inline-flex items-center justify-center shrink-0 ${className}`} style={style}>
       {icon}
