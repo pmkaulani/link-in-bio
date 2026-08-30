@@ -63,7 +63,7 @@ export async function generateMetadata({ params }) {
   const images = profile.avatar_url ? [{ url: profile.avatar_url, width: 400, height: 400, alt: name }] : [];
 
   // Unlisted profiles should not be indexed by search engines
-  const shouldIndex = status === 'published';
+  const shouldIndex = pubStatus === 'published';
 
   return {
     title: `${name} (@${profile.username})`,
