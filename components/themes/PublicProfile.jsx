@@ -8,6 +8,7 @@ import { logPageView, logLinkClick } from '../../lib/analytics';
 import { safeHref, safeColor, isWithinSchedule, resolvePageTextColor } from '../../lib/publicProfileUtils';
 import BackgroundEffects from './BackgroundEffects';
 import BrandLogo from '../BrandLogo';
+import SocialIcon from '../ui/SocialIcon';
 import {
   MoreVertical,
   Copy,
@@ -29,6 +30,7 @@ import {
   Link2,
   Contrast,
   Download,
+  Share2,
   Globe,
   Play,
 } from 'lucide-react';
@@ -411,7 +413,7 @@ function LinkShareModal({ linkData, profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-x-twitter text-[18px]" />
+              <SocialIcon name="twitter" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">X</span>
           </button>
@@ -422,7 +424,7 @@ function LinkShareModal({ linkData, profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1877F2] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-facebook-f text-[18px]" />
+              <SocialIcon name="facebook" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">Facebook</span>
           </button>
@@ -433,7 +435,7 @@ function LinkShareModal({ linkData, profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-whatsapp text-[20px]" />
+              <SocialIcon name="whatsapp" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">WhatsApp</span>
           </button>
@@ -444,7 +446,7 @@ function LinkShareModal({ linkData, profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0A66C2] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-linkedin-in text-[18px]" />
+              <SocialIcon name="linkedin" className="text-[19px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">LinkedIn</span>
           </button>
@@ -455,7 +457,7 @@ function LinkShareModal({ linkData, profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFFC00] text-black transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-snapchat text-[18px]" />
+              <SocialIcon name="snapchat" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">Snapchat</span>
           </button>
@@ -724,7 +726,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-x-twitter text-[18px]" />
+              <SocialIcon name="twitter" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">X</span>
           </button>
@@ -735,7 +737,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1877F2] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-facebook-f text-[18px]" />
+              <SocialIcon name="facebook" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">Facebook</span>
           </button>
@@ -746,7 +748,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-whatsapp text-[20px]" />
+              <SocialIcon name="whatsapp" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">WhatsApp</span>
           </button>
@@ -757,7 +759,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0A66C2] text-white transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-linkedin-in text-[18px]" />
+              <SocialIcon name="linkedin" className="text-[19px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">LinkedIn</span>
           </button>
@@ -768,7 +770,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none min-w-[54px]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFFC00] text-black transition hover:scale-105 shadow-xs">
-              <i className="fa-brands fa-snapchat text-[18px]" />
+              <SocialIcon name="snapchat" className="text-[20px]" />
             </span>
             <span className="text-[11px] font-bold text-zinc-600 group-hover:text-black">Snapchat</span>
           </button>
@@ -1071,7 +1073,7 @@ function LinkBlock({ data, profile, index, blockId, onOpenShareLink }) {
           {data.thumbnail_url ? (
             <img src={data.thumbnail_url} alt="" className="h-full w-full object-cover rounded-full" />
           ) : (
-            <i className={`${icon.className} text-lg transition-transform duration-300 group-hover:scale-110`} />
+            <SocialIcon name={icon.className} className="text-lg transition-transform duration-300 group-hover:scale-110" />
           )}
         </span>
         <span className="min-w-0 flex-1 pr-8 text-left">
@@ -1371,7 +1373,7 @@ export default function PublicProfile({ profile, blocks }) {
                 style={{ color: text }}
                 title="Share profile"
               >
-                <Download size={13} className="rotate-[-45deg]" />
+                <Share2 size={14} />
               </button>
             </div>
           </div>
@@ -1440,7 +1442,7 @@ export default function PublicProfile({ profile, blocks }) {
                       aria-label={icon.label || name}
                       title={icon.label || name}
                     >
-                      <i className={`${icon.className} text-[19px] transition-transform duration-200 group-hover:scale-105`} />
+                      <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
                     </a>
                   );
                 })}

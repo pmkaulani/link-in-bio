@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import {
   ExternalLink,
+  Share2,
   Copy,
   Check,
   Image as ImageIcon,
@@ -14,6 +15,7 @@ import { ICONS } from '../../lib/icons';
 import { safeColor, resolvePageTextColor } from '../../lib/publicProfileUtils';
 import BackgroundEffects from '../themes/BackgroundEffects';
 import BrandLogo from '../BrandLogo';
+import SocialIcon from '../ui/SocialIcon';
 import { useDashboard } from '../../app/dashboard/DashboardContext';
 
 const FONT_MAP = {
@@ -119,15 +121,15 @@ function PreviewLink({ data, profile, isSelected }) {
         {data.thumbnail_url ? (
           <img src={data.thumbnail_url} alt="" className="h-full w-full object-cover rounded-full" />
         ) : (
-          <i className={`${icon.className} text-lg`} />
+          <SocialIcon name={icon.className} className="text-lg" />
         )}
       </span>
       <span className="min-w-0 flex-1 text-left">
         <span className="block truncate font-bold text-[14px]">{data.title || 'Untitled link'}</span>
         {data.subtitle && <span className="mt-0.5 block truncate text-[11px] opacity-65">{data.subtitle}</span>}
       </span>
-      <span className="shrink-0 text-xs opacity-50">
-        <i className="fa-solid fa-arrow-up-right-from-square" />
+      <span className="shrink-0 opacity-50">
+        <ExternalLink size={13} />
       </span>
     </div>
   );
@@ -263,9 +265,9 @@ function PreviewSocialsBar({ profile }) {
         return (
           <span
             key={name}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 text-xs backdrop-blur-md shadow-xs"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 backdrop-blur-md shadow-xs"
           >
-            <i className={icon.className} style={{ color: icon.color }} />
+            <SocialIcon name={icon.className} style={{ color: icon.color, fontSize: 14 }} />
           </span>
         );
       })}
@@ -388,8 +390,8 @@ export default function LivePreview({ profile, blocks }) {
             <span className="flex items-center" style={{ color: text }}>
               <BrandLogo size="xs" variant="text" theme="current" />
             </span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 border border-current/20 text-[10px] backdrop-blur-md shadow-xs" style={{ color: text }}>
-              <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 border border-current/20 backdrop-blur-md shadow-xs" style={{ color: text }}>
+              <Share2 size={10} />
             </span>
           </div>
 
@@ -442,7 +444,7 @@ export default function LivePreview({ profile, blocks }) {
                         className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm border border-white/10"
                         title={icon.label || name}
                       >
-                        <i className={icon.className} style={{ fontSize: 14 }} />
+                        <SocialIcon name={icon.className} style={{ fontSize: 14 }} />
                       </span>
                     );
                   })}

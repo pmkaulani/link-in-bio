@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 const SVG_ICONS = {
   instagram: (
@@ -90,13 +90,40 @@ const SVG_ICONS = {
       <polyline points="22,6 12,13 2,6"/>
     </svg>
   ),
+  trending: (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+      <polyline points="17 6 23 6 23 12"/>
+    </svg>
+  ),
+  store: (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  ),
+  music: (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13"/>
+      <circle cx="6" cy="18" r="3"/>
+      <circle cx="18" cy="16" r="3"/>
+    </svg>
+  ),
 };
 
 export default function SocialIcon({ name, className = '', style = {} }) {
-  const iconKey = (name || '').toLowerCase().replace(/^(fa-brands-|fa-solid-|fa-regular-|fa-)/, '');
+  let iconKey = (name || '').toLowerCase().replace(/^(fa-brands-|fa-solid-|fa-regular-|fa-)/, '');
+  if (iconKey === 'x' || iconKey === 'x-twitter') iconKey = 'twitter';
+  if (iconKey === 'facebook-f') iconKey = 'facebook';
+  if (iconKey === 'linkedin-in') iconKey = 'linkedin';
+  if (iconKey === 'bag-shopping') iconKey = 'store';
+  if (iconKey === 'envelope') iconKey = 'email';
+  if (iconKey === 'arrow-trend-up') iconKey = 'trending';
+
   const icon = SVG_ICONS[iconKey] || SVG_ICONS[name] || SVG_ICONS.link;
   return (
-    <span className={`inline-flex items-center justify-center ${className}`} style={style}>
+    <span className={`inline-flex items-center justify-center shrink-0 ${className}`} style={style}>
       {icon}
     </span>
   );
