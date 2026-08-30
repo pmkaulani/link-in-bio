@@ -14,12 +14,26 @@ function Field({ label, children }) {
   );
 }
 
-function Input({ value, onChange, placeholder, type = 'text', maxLength }) {
+function handleAutoScroll(e) {
+  const el = e.target;
+  if (el && typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 320);
+  }
+}
+
+function Input({ value, onChange, placeholder, type = 'text', maxLength, onFocus }) {
   return (
     <input
       type={type}
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={(e) => {
+        handleAutoScroll(e);
+        onFocus?.(e);
+      }}
       placeholder={placeholder}
       maxLength={maxLength}
       className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none"
@@ -319,6 +333,7 @@ function TextEditor({ data, onUpdate }) {
       <textarea
         value={data.text || ''}
         onChange={(e) => onUpdate({ text: e.target.value })}
+        onFocus={handleAutoScroll}
         rows={3}
         className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none"
         placeholder="Write something..."
@@ -334,6 +349,7 @@ function CalloutEditor({ data, onUpdate }) {
         <textarea
           value={data.text || ''}
           onChange={(e) => onUpdate({ text: e.target.value })}
+          onFocus={handleAutoScroll}
           rows={2}
           className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none"
           placeholder="e.g. 🔥 New merch drop live this Friday at 6 PM!"
@@ -440,12 +456,14 @@ function GridEditor({ data, onUpdate }) {
               <input
                 value={item.thumbnail_url || ''}
                 onChange={(e) => updateItem(i, { thumbnail_url: e.target.value })}
+                onFocus={handleAutoScroll}
                 placeholder="Thumbnail image URL"
                 className="min-w-0 flex-1 rounded-[8px] border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-black focus:border-black focus:outline-none"
               />
               <input
                 value={item.link_url || ''}
                 onChange={(e) => updateItem(i, { link_url: e.target.value })}
+                onFocus={handleAutoScroll}
                 placeholder="Post destination link"
                 className="min-w-0 flex-1 rounded-[8px] border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-black focus:border-black focus:outline-none"
               />

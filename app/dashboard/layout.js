@@ -28,6 +28,56 @@ function InnerLayout({ children }) {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [postingHeader, setPostingHeader] = useState(false);
 
+  // Auto-scroll focused inputs into view above mobile virtual soft keyboards
+  useEffect(() => {
+    function scrollActiveElementIntoView() {
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT' ||
+          active.isContentEditable)
+      ) {
+        // Immediate smooth scroll to center
+        active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Secondary scroll after mobile virtual keyboard finishes opening (~300ms)
+        setTimeout(() => {
+          active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 320);
+      }
+    }
+
+    function handleFocusIn(e) {
+      const target = e.target;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 320);
+      }
+    }
+
+    window.addEventListener('focusin', handleFocusIn);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', scrollActiveElementIntoView);
+    }
+
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', scrollActiveElementIntoView);
+      }
+    };
+  }, []);
+
   async function handleHeaderPublish() {
     setPostingHeader(true);
     await publishChanges();
