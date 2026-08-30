@@ -542,8 +542,8 @@ export default function SettingsPage() {
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Account Email</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs font-mono font-bold text-black truncate">{emailInput || 'No email set'}</span>
-                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
-                    Verified
+                  <span className="rounded-full bg-zinc-200 text-zinc-800 text-[9px] font-bold px-2 py-0.5 shrink-0">
+                    Confirmed
                   </span>
                 </div>
               </div>
@@ -759,7 +759,7 @@ export default function SettingsPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="flex items-center gap-3 rounded-[8px] border border-zinc-200 bg-zinc-50 p-3.5">
-                <span className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-black shrink-0" />
                 <div>
                   <span className="block text-xs font-bold text-black">Platform Status</span>
                   <span className="block text-[10px] text-zinc-500">Active & in good standing</span>
@@ -773,7 +773,7 @@ export default function SettingsPage() {
                     {profile?.is_verified ? 'Verified Badge' : 'Standard Creator'}
                   </span>
                   <span className="block text-[10px] text-zinc-500">
-                    {profile?.is_verified ? 'Official checkmark enabled' : 'Eligible for verification'}
+                    {profile?.is_verified ? 'Official checkmark enabled' : 'Unverified account'}
                   </span>
                 </div>
               </div>

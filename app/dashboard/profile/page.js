@@ -252,22 +252,20 @@ function ShareCard({ username }) {
       ctx.lineWidth = 10;
       ctx.stroke();
 
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 11;
-      ctx.lineCap = 'round';
+      const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${badgeSize}" height="${badgeSize}"><path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+      const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const logoImg = new Image();
+      logoImg.onload = () => {
+        ctx.drawImage(logoImg, badgeX + 18, badgeY + 18, badgeSize - 36, badgeSize - 36);
+        URL.revokeObjectURL(svgUrl);
 
-      ctx.beginPath();
-      ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
-      ctx.stroke();
-
-      const link = document.createElement('a');
-      link.download = `${username}-qr-code.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+        const link = document.createElement('a');
+        link.download = `${username}-qr-code.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      logoImg.src = svgUrl;
     };
     img.src = qrUrl;
   }
@@ -276,9 +274,12 @@ function ShareCard({ username }) {
     <div className="flex flex-col items-center justify-center gap-4 py-6 text-center border-t border-zinc-200">
       <div className="relative overflow-hidden rounded-2xl border-2 border-black bg-black p-3 shadow-xl">
         <img src={qrUrl} alt={`QR code for ${pageUrl}`} className="h-36 w-36 rounded-xl object-contain bg-white p-1" />
-        {/* Centered App Logo Badge */}
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl bg-black border-2 border-white shadow-2xl">
-          <Link2 size={18} className="text-white" strokeWidth={2.8} />
+        {/* Centered App Logo Badge matching app/icon.svg */}
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl bg-black border-2 border-white shadow-2xl p-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="h-6 w-6">
+            <path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
       <div className="max-w-md flex flex-col items-center">
