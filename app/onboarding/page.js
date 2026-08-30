@@ -180,26 +180,29 @@ export default function OnboardingPage() {
       // 1. Fast client-side downscaling & compression to 320x320 WebP (<25KB)
       const { dataUrl, file: compressedBlob } = await compressAvatarImage(file, 320, 0.82);
 
+      // 2. Show the compressed image IMMEDIATELY — no waiting for upload
+      setAvatarUrl(dataUrl);
+      setAvatarUploading(false);
+
+      // 3. Upload to Supabase storage in the background (non-blocking)
       if (isSupabaseConfigured && userId) {
         const path = `avatars/${userId}.webp`;
-        const { error } = await supabase.storage.from('avatars').upload(path, compressedBlob, {
+        supabase.storage.from('avatars').upload(path, compressedBlob, {
           contentType: 'image/webp',
           upsert: true,
+        }).then(({ error }) => {
+          if (!error) {
+            const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+            // Silently swap to the permanent CDN URL once uploaded
+            setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
+          }
+        }).catch(() => {
+          // Silent fail — dataUrl fallback is already in use
         });
-        if (!error) {
-          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-          setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
-        } else {
-          // Fallback to compressed data URL
-          setAvatarUrl(dataUrl);
-        }
-      } else {
-        setAvatarUrl(dataUrl);
       }
     } catch {
-      // Fallback
-    } finally {
       setAvatarUploading(false);
+    } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
