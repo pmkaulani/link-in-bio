@@ -51,6 +51,17 @@ const FONT_MAP = {
   system: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 };
 
+const GOOGLE_FONT_URLS = {
+  poppins: 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap',
+  outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap',
+  plus_jakarta: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap',
+  playfair: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap',
+  lora: 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap',
+  syne: 'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap',
+  quicksand: 'https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap',
+  montserrat: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap',
+};
+
 const ANIMATIONS = {
   none: '',
   fade: 'link-anim-fade',
@@ -1305,17 +1316,23 @@ export default function PublicProfile({ profile, blocks }) {
     );
   }
 
+  const customFontUrl = GOOGLE_FONT_URLS[profile?.font];
+
   return (
-    <div className="min-h-screen w-full bg-[#18181B] flex items-center justify-center p-0 sm:p-6 md:p-10">
-      <main
-        className="link-page relative w-full sm:max-w-[580px] min-h-screen sm:min-h-[850px] sm:rounded-[36px] overflow-hidden px-5 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
-        style={{
-          ...getBackground(profile || {}),
-          color: text,
-          fontFamily: font,
-        }}
-        onMouseMove={profile?.cursor_glow !== 'none' ? handleMove : undefined}
-      >
+    <>
+      {customFontUrl && (
+        <link rel="stylesheet" href={customFontUrl} />
+      )}
+      <div className="min-h-screen w-full bg-[#18181B] flex items-center justify-center p-0 sm:p-6 md:p-10">
+        <main
+          className="link-page relative w-full sm:max-w-[580px] min-h-screen sm:min-h-[850px] sm:rounded-[36px] overflow-hidden px-5 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
+          style={{
+            ...getBackground(profile || {}),
+            color: text,
+            fontFamily: font,
+          }}
+          onMouseMove={profile?.cursor_glow !== 'none' ? handleMove : undefined}
+        >
         <BackgroundEffects effect={profile?.bg_effect || 'none'} primary={primary} />
 
         {profile?.cursor_glow !== 'none' && (
@@ -1502,5 +1519,6 @@ export default function PublicProfile({ profile, blocks }) {
         />
       </main>
     </div>
+    </>
   );
 }

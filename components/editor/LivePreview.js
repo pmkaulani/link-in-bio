@@ -33,6 +33,17 @@ const FONT_MAP = {
   system: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 };
 
+const GOOGLE_FONT_URLS = {
+  poppins: 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap',
+  outfit: 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap',
+  plus_jakarta: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap',
+  playfair: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap',
+  lora: 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap',
+  syne: 'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap',
+  quicksand: 'https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap',
+  montserrat: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap',
+};
+
 const ANIM_CLASSES = {
   none: '', fade: 'link-anim-fade', slideUp: 'link-anim-slide-up',
   slideLeft: 'link-anim-slide-left', zoom: 'link-anim-zoom',
@@ -281,7 +292,8 @@ export default function LivePreview({ profile, blocks }) {
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile);
-  const font = FONT_MAP[profile?.font_family] || FONT_MAP.inter;
+  const font = FONT_MAP[profile?.font_family] || FONT_MAP[profile?.font] || FONT_MAP.inter;
+  const customFontUrl = GOOGLE_FONT_URLS[profile?.font_family] || GOOGLE_FONT_URLS[profile?.font];
   const visibleBlocks = (blocks || []).filter((b) => b.is_visible !== false);
 
   const username = profile?.username || 'creator';
@@ -297,7 +309,9 @@ export default function LivePreview({ profile, blocks }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <>
+      {customFontUrl && <link rel="stylesheet" href={customFontUrl} />}
+      <div className="flex flex-col items-center gap-3">
       {/* Top Monochrome Action Bar */}
       <div className="flex w-full max-w-[340px] items-center justify-between gap-2 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2 shadow-sm">
         <div className="min-w-0 flex-1 flex items-center gap-2">
@@ -484,5 +498,6 @@ export default function LivePreview({ profile, blocks }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
