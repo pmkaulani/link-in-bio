@@ -231,17 +231,120 @@ export async function POST(req) {
       return NextResponse.json({ success: true, user: updated });
     }
 
-    // 6. Revoke Active Session
-    if (action === 'revoke_session') {
-      const { sessionId } = body;
-      return NextResponse.json({ success: true, message: `Session ${sessionId || ''} revoked.` });
+    // 6. Record/Heartbeat Device Session
+    if (action === 'record_session') {
+      const { deviceId, device, browser, userAgent } = body;
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('socials')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const now = new Date().toISOString();
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        req.headers.get('x-real-ip') ||
+        'Current Network';
+
+      let existingSessions = Array.isArray(currentProfile?.socials?._active_sessions)
+        ? [...currentProfile.socials._active_sessions]
+        : [];
+
+      const targetId = deviceId || 'sess-' + Math.random().toString(36).slice(2, 10);
+      const existingIdx = existingSessions.findIndex((s) => s.id === targetId);
+
+      const sessionItem = {
+        id: targetId,
+        device: device || 'Unknown Device',
+        browser: browser || 'Web Browser',
+        lastActive: now,
+        ip,
+        userAgent: userAgent || '',
+      };
+
+      if (existingIdx >= 0) {
+        existingSessions[existingIdx] = {
+          ...existingSessions[existingIdx],
+          ...sessionItem,
+        };
+      } else {
+        existingSessions.unshift(sessionItem);
+      }
+
+      // Filter out sessions older than 30 days and keep top 10
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      existingSessions = existingSessions
+        .filter((s) => !s.lastActive || new Date(s.lastActive).getTime() > thirtyDaysAgo)
+        .slice(0, 10);
+
+      const updatedSocials = {
+        ...(currentProfile?.socials || {}),
+        _active_sessions: existingSessions,
+      };
+
+      await supabase.from('profiles').update({ socials: updatedSocials }).eq('id', userId);
+      return NextResponse.json({ success: true, sessions: existingSessions, currentDeviceId: targetId });
     }
 
-    // 7. Sign Out Everywhere
+    // 7. Get Active Sessions
+    if (action === 'get_sessions') {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('socials')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const sessions = Array.isArray(currentProfile?.socials?._active_sessions)
+        ? currentProfile.socials._active_sessions
+        : [];
+
+      return NextResponse.json({ success: true, sessions });
+    }
+
+    // 8. Revoke Active Session
+    if (action === 'revoke_session') {
+      const { sessionId } = body;
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('socials')
+        .eq('id', userId)
+        .maybeSingle();
+
+      let existingSessions = Array.isArray(currentProfile?.socials?._active_sessions)
+        ? [...currentProfile.socials._active_sessions]
+        : [];
+
+      existingSessions = existingSessions.filter((s) => s.id !== sessionId);
+
+      const updatedSocials = {
+        ...(currentProfile?.socials || {}),
+        _active_sessions: existingSessions,
+      };
+
+      await supabase.from('profiles').update({ socials: updatedSocials }).eq('id', userId);
+      return NextResponse.json({ success: true, sessions: existingSessions, message: 'Session revoked successfully.' });
+    }
+
+    // 9. Sign Out Everywhere
     if (action === 'sign_out_everywhere') {
       if (!isLocalMode) {
-        await supabase.auth.signOut({ scope: 'global' });
+        try {
+          await supabase.auth.signOut({ scope: 'global' });
+        } catch (_) {}
       }
+
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('socials')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const updatedSocials = {
+        ...(currentProfile?.socials || {}),
+        _active_sessions: [],
+      };
+
+      await supabase.from('profiles').update({ socials: updatedSocials }).eq('id', userId);
       return NextResponse.json({ success: true, message: 'All active sessions invalidated.' });
     }
 

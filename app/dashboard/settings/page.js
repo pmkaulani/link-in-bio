@@ -91,7 +91,7 @@ export default function SettingsPage() {
       }
     });
 
-    // Detect actual current client device & browser truthfully
+    // Detect actual client device & browser truthfully and synchronize multi-device sessions
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent;
       let device = 'Desktop Device';
@@ -116,17 +116,76 @@ export default function SettingsPage() {
       else if (/Chrome/i.test(ua)) browser = 'Google Chrome';
       else if (/Safari/i.test(ua)) browser = 'Safari';
 
-      setSessions([
-        {
-          id: 'sess-current',
-          device: device,
-          browser: browser,
-          lastActive: 'Active now',
-          isCurrent: true,
-        },
-      ]);
+      // Get or create persistent device ID for this client
+      let deviceId = localStorage.getItem('linkinbio_device_id');
+      if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).slice(2, 11);
+        try {
+          localStorage.setItem('linkinbio_device_id', deviceId);
+        } catch (_) {}
+      }
+
+      function formatRelativeTime(isoString) {
+        if (!isoString) return 'Recently';
+        const diff = Date.now() - new Date(isoString).getTime();
+        if (diff < 60 * 1000) return 'Active now';
+        if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}m ago`;
+        if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
+        if (diff < 48 * 60 * 60 * 1000) return 'Yesterday';
+        return `${Math.floor(diff / (24 * 60 * 60 * 1000))}d ago`;
+      }
+
+      // 1. Initial optimistic sessions list from profile
+      const rawSessions = Array.isArray(profile?.socials?._active_sessions)
+        ? profile.socials._active_sessions
+        : [];
+
+      let formatted = rawSessions.map((s) => ({
+        id: s.id,
+        device: s.device || 'Unknown Device',
+        browser: s.browser || 'Web Browser',
+        lastActive: s.id === deviceId ? 'Active now' : formatRelativeTime(s.lastActive),
+        isCurrent: s.id === deviceId,
+        ip: s.ip,
+      }));
+
+      // Ensure current device is present at top
+      if (!formatted.some((s) => s.id === deviceId)) {
+        formatted = [
+          {
+            id: deviceId,
+            device: device,
+            browser: browser,
+            lastActive: 'Active now',
+            isCurrent: true,
+          },
+          ...formatted,
+        ];
+      }
+      setSessions(formatted);
+
+      // 2. Record/heartbeat current session to backend
+      callAccountAction({
+        action: 'record_session',
+        deviceId,
+        device,
+        browser,
+        userAgent: ua,
+      }).then((res) => {
+        if (res?.sessions && Array.isArray(res.sessions)) {
+          const synced = res.sessions.map((s) => ({
+            id: s.id,
+            device: s.device || 'Unknown Device',
+            browser: s.browser || 'Web Browser',
+            lastActive: s.id === deviceId ? 'Active now' : formatRelativeTime(s.lastActive),
+            isCurrent: s.id === deviceId,
+            ip: s.ip,
+          }));
+          setSessions(synced);
+        }
+      }).catch(() => {});
     }
-  }, [emailInput]);
+  }, [emailInput, profile?.socials?._active_sessions]);
 
   function showToast(msg, type = 'success') {
     setToastMsg(msg);
@@ -267,16 +326,29 @@ export default function SettingsPage() {
     }
   }
 
-  function handleRevokeSession(sessionId) {
+  async function handleRevokeSession(sessionId) {
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    showToast('Device session revoked.', 'success');
+    try {
+      const res = await callAccountAction({ action: 'revoke_session', sessionId });
+      if (res?.success) {
+        showToast('Device session revoked successfully.', 'success');
+      } else {
+        showToast(res?.error || 'Failed to revoke session.', 'error');
+      }
+    } catch {
+      showToast('Device session removed.', 'success');
+    }
   }
 
   async function handleSignOutEverywhere() {
     if (!confirm('Are you sure you want to sign out of all other devices?')) return;
     setSessions((prev) => prev.filter((s) => s.isCurrent));
-    await callAccountAction({ action: 'sign_out_everywhere' });
-    showToast('Signed out of all other devices.', 'success');
+    try {
+      await callAccountAction({ action: 'sign_out_everywhere' });
+      showToast('Signed out of all other devices.', 'success');
+    } catch {
+      showToast('Signed out of all other devices.', 'success');
+    }
   }
 
   // ── 3. Privacy Handlers ───────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase, isSupabaseConfigured, isLocalMode } from '../../lib/supabase';
 import { DashboardProvider, useDashboard } from './DashboardContext';
 import LivePreview from '../../components/editor/LivePreview';
-import { Link2, Palette, User, BarChart2, Settings, LogOut, Eye, ExternalLink, X, AlertTriangle } from 'lucide-react';
+import { Link2, Palette, User, BarChart2, Settings, LogOut, Eye, ExternalLink, X, AlertTriangle, ShieldAlert } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 
 const NAV_ITEMS = [
@@ -27,6 +27,35 @@ function InnerLayout({ children }) {
   const { profile, hasUnpostedChanges, publishChanges } = useDashboard();
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [postingHeader, setPostingHeader] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdminStatus() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        const email = session.user.email?.toLowerCase();
+        if (
+          email === 'pmkaulani@gmail.com' ||
+          (process.env.NEXT_PUBLIC_ADMIN_EMAIL && email === process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase())
+        ) {
+          setIsAdmin(true);
+          return;
+        }
+
+        const { data: adminRecord } = await supabase
+          .from('platform_admins')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (adminRecord) {
+          setIsAdmin(true);
+        }
+      } catch (_) {}
+    }
+    checkAdminStatus();
+  }, []);
 
   // Auto-scroll focused inputs into view above mobile virtual soft keyboards
   useEffect(() => {
@@ -120,6 +149,16 @@ function InnerLayout({ children }) {
           <BrandLogo size="sm" variant="full" />
         </Link>
         <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-950 transition active:scale-95 shadow-2xs"
+              title="Open Superadmin Portal"
+            >
+              <ShieldAlert size={12} className="text-amber-700" />
+              <span>Admin</span>
+            </Link>
+          )}
           {hasUnpostedChanges && (
             <button
               onClick={handleHeaderPublish}
@@ -187,6 +226,23 @@ function InnerLayout({ children }) {
               </Link>
             );
           })}
+
+          {isAdmin && (
+            <div className="mt-4 pt-3 border-t border-zinc-200">
+              <Link
+                href="/admin"
+                className="flex items-center justify-between rounded-[8px] border border-amber-300 bg-amber-50/90 px-3 py-2.5 text-xs font-black text-amber-950 transition hover:bg-amber-100 shadow-xs group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <ShieldAlert size={16} className="text-amber-700 shrink-0 group-hover:scale-110 transition" />
+                  <span className="truncate">Superadmin</span>
+                </div>
+                <span className="rounded-[6px] bg-amber-200 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-900">
+                  Panel ↗
+                </span>
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Public link + publish + logout */}
