@@ -147,19 +147,19 @@ function InnerLayout({ children }) {
       {/* Mobile Top Header */}
       <header
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-        className="flex min-h-[56px] w-full shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:hidden"
+        className="flex h-14 w-full shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-3.5 sm:hidden"
       >
-        <Link href="/dashboard">
-          <BrandLogo size="sm" variant="full" />
+        <Link href="/dashboard" className="shrink-0">
+          <BrandLogo size="xs" variant="full" />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {isAdmin && (
             <Link
               href="/admin"
-              className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-950 transition active:scale-95 shadow-2xs"
+              className="flex h-8 items-center gap-1 rounded-full border border-amber-300 bg-amber-50/90 px-2.5 text-[11px] font-black text-amber-950 transition active:scale-95 shadow-2xs hover:bg-amber-100"
               title="Open Superadmin Portal"
             >
-              <ShieldAlert size={12} className="text-amber-700" />
+              <ShieldAlert size={12} className="text-amber-700 shrink-0" />
               <span>Admin</span>
             </Link>
           )}
@@ -167,7 +167,7 @@ function InnerLayout({ children }) {
             <button
               onClick={handleHeaderPublish}
               disabled={postingHeader}
-              className="flex items-center gap-1.5 rounded-[8px] bg-black px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-60"
+              className="flex h-8 items-center gap-1.5 rounded-full bg-black px-3 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-60"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
               <span>{postingHeader ? 'Posting...' : 'Post'}</span>
@@ -175,9 +175,9 @@ function InnerLayout({ children }) {
           )}
           <button
             onClick={() => setMobilePreviewOpen(true)}
-            className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-900 transition active:scale-95"
+            className="flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-bold text-zinc-900 transition active:scale-95 hover:bg-zinc-200"
           >
-            <Eye size={14} />
+            <Eye size={13} className="shrink-0" />
             <span>Preview</span>
           </button>
           {profile?.username && (
@@ -185,20 +185,12 @@ function InnerLayout({ children }) {
               href={`/${profile.username}`}
               target="_blank"
               rel="noreferrer"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-800 shadow-sm"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition active:scale-95 hover:bg-zinc-100 hover:text-black shadow-2xs"
               title="Open live page"
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={13} />
             </a>
           )}
-          <button
-            onClick={handleLogout}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-600 transition active:scale-95 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
-            title="Log out"
-            aria-label="Log out"
-          >
-            <LogOut size={14} />
-          </button>
         </div>
       </header>
 

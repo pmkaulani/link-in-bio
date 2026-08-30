@@ -6,9 +6,6 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const PUBLIC_PROFILE_COLUMNS =
-  'id, username, display_name, bio, avatar_url, theme, background_color, background_type, background_value, text_color, primary_color, button_style, button_radius, font_family, font, animation, bg_effect, cursor_glow, is_verified, publication_status, account_status, published_profile, published_blocks, custom_css, socials, created_at';
-
 function normalizeUsernameParam(username) {
   const value = Array.isArray(username) ? username[0] : username;
   const raw = String(value || '').trim();
@@ -23,13 +20,29 @@ async function getProfile(username) {
   const cleanUsername = normalizeUsernameParam(username);
   if (!cleanUsername) return null;
   if (isLocalMode) return null;
+
+  // 1. Primary exact match with select('*')
   const { data, error } = await supabase
     .from('profiles')
-    .select(PUBLIC_PROFILE_COLUMNS)
+    .select('*')
     .eq('username', cleanUsername)
     .maybeSingle();
-  if (error) console.error('[PublicPage] getProfile error:', error.message, error.details);
-  return data || null;
+
+  if (data) return data;
+
+  // 2. Case-insensitive fallback
+  const { data: ilikeData, error: ilikeError } = await supabase
+    .from('profiles')
+    .select('*')
+    .ilike('username', cleanUsername)
+    .maybeSingle();
+
+  if (ilikeData) return ilikeData;
+
+  if (error || ilikeError) {
+    console.error('[PublicPage] getProfile error:', error?.message || ilikeError?.message);
+  }
+  return null;
 }
 
 export async function generateMetadata({ params }) {
@@ -38,10 +51,10 @@ export async function generateMetadata({ params }) {
   const profile = await getProfile(params.username);
   if (!profile) return { title: 'Page not found — LinkBio' };
 
-  // Gate: draft, suspended, or banned profiles return a generic 'not found' metadata
-  const status = profile.publication_status || 'published';
+  // Gate: only truly suspended or banned profiles return a generic 'not found' metadata
   const acctStatus = profile.account_status || 'active';
-  if (status === 'draft' || status === 'suspended' || acctStatus === 'suspended' || acctStatus === 'banned') {
+  const pubStatus = profile.publication_status || 'published';
+  if (pubStatus === 'suspended' || acctStatus === 'suspended' || acctStatus === 'banned') {
     return { title: 'Page not found — LinkBio' };
   }
 
@@ -93,11 +106,10 @@ export default async function PublicPage({ params }) {
   const profile = await getProfile(params.username);
   if (!profile) return notFound();
 
-  // Gate: draft profiles return 404 — they should not be publicly accessible.
-  // Suspended/banned profiles also return 404 to prevent public access.
+  // Gate: Suspended/banned profiles return 404 to prevent public access.
   const pubStatus = profile.publication_status || 'published';
   const acctStatus = profile.account_status || 'active';
-  if (pubStatus === 'draft' || pubStatus === 'suspended' || acctStatus === 'suspended' || acctStatus === 'banned') {
+  if (pubStatus === 'suspended' || acctStatus === 'suspended' || acctStatus === 'banned') {
     return notFound();
   }
 
