@@ -8,6 +8,14 @@ import ConfettiBurst from './ConfettiBurst';
 
 export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) {
   const [flags, setFlags] = useState(() => getQuestFlags());
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('quests_dismissed') === 'true';
+      } catch (_) {}
+    }
+    return false;
+  });
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -54,6 +62,13 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
     }
   }, [pct, celebrated]);
 
+  function handleDismiss() {
+    setDismissed(true);
+    try {
+      localStorage.setItem('quests_dismissed', 'true');
+    } catch (_) {}
+  }
+
   function toggleCollapse() {
     setIsCollapsed((prev) => {
       const next = !prev;
@@ -64,22 +79,9 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
     });
   }
 
-  // If completed 100% and user dismissed/collapsed, render a compact completion badge
-  if (pct === 100 && isCollapsed) {
-    return (
-      <div className="mb-6 flex items-center justify-between rounded-2xl border border-zinc-300 bg-zinc-50/70 px-4 py-3 text-xs text-black shadow-xs animate-profile-in">
-        <div className="flex items-center gap-2 font-bold">
-          <Trophy size={16} className="text-black" />
-          <span>All onboarding quests complete! (6/6)</span>
-        </div>
-        <button
-          onClick={toggleCollapse}
-          className="font-bold text-zinc-700 hover:text-black underline"
-        >
-          View checklist
-        </button>
-      </div>
-    );
+  // If dismissed or 100% complete, disappear completely
+  if (dismissed || pct === 100) {
+    return showConfetti ? <ConfettiBurst onComplete={() => setShowConfetti(false)} /> : null;
   }
 
   return (
@@ -108,15 +110,23 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-extrabold text-black">{pct}%</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-extrabold text-black mr-1">{pct}%</span>
             <button
               onClick={toggleCollapse}
               className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:bg-zinc-100 hover:text-black"
               title={isCollapsed ? 'Expand quests' : 'Collapse quests'}
               aria-label={isCollapsed ? 'Expand quests' : 'Collapse quests'}
             >
-              {isCollapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+              {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              title="Remove quest checklist"
+              aria-label="Remove quest checklist"
+            >
+              <X size={14} />
             </button>
           </div>
         </div>
