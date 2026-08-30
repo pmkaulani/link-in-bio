@@ -84,11 +84,14 @@ export default async function PublicPage({ params }) {
 
   // Use published snapshot for public visitors, or fallback to live profile/blocks
   const effectiveProfile = profile.published_profile || profile;
-  const { data: dbBlocks } = await supabase.from('blocks').select('*').eq('profile_id', profile.id).order('position');
+  let finalBlocks = [];
 
-  let finalBlocks = Array.isArray(profile.published_blocks) && profile.published_blocks.length > 0
-    ? profile.published_blocks
-    : (dbBlocks && dbBlocks.length > 0 ? dbBlocks : (profile.published_blocks || []));
+  if (Array.isArray(profile.published_blocks) && profile.published_blocks.length > 0) {
+    finalBlocks = profile.published_blocks;
+  } else {
+    const { data: dbBlocks } = await supabase.from('blocks').select('*').eq('profile_id', profile.id).order('position');
+    finalBlocks = dbBlocks || [];
+  }
 
   // Server-side filtering: only show visible, non-disabled blocks to public visitors.
   finalBlocks = finalBlocks.filter((b) => b.is_visible !== false && b.is_disabled !== true);

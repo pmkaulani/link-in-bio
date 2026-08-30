@@ -46,12 +46,37 @@ function normalizeForComparison(obj) {
 }
 
 export function DashboardProvider({ children }) {
-  const [profile, setProfile] = useState(null);
-  const [blocks, setBlocks] = useState([]);
+  const [profile, setProfile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkinbio_cached_profile');
+        if (cached) return JSON.parse(cached);
+      } catch (_) {}
+    }
+    return null;
+  });
+
+  const [blocks, setBlocks] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('linkinbio_cached_blocks');
+        if (cached) return JSON.parse(cached);
+      } catch (_) {}
+    }
+    return [];
+  });
+
   const [publishedProfile, setPublishedProfile] = useState(null);
   const [publishedBlocks, setPublishedBlocks] = useState([]);
   const [hasUnpostedChanges, setHasUnpostedChanges] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem('linkinbio_cached_profile')) return false;
+      } catch (_) {}
+    }
+    return true;
+  });
   const [userId, setUserId] = useState(null);
 
   // Save status & Visual editor selection
@@ -78,7 +103,7 @@ export function DashboardProvider({ children }) {
     }, 5000);
   }, []);
 
-  // Load profile + blocks
+  // Load profile + blocks with background synchronization
   const load = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -98,6 +123,12 @@ export function DashboardProvider({ children }) {
 
       setProfile(loadedProfile);
       setBlocks(loadedBlocks);
+
+      // Persist to fast local cache
+      try {
+        if (loadedProfile) localStorage.setItem('linkinbio_cached_profile', JSON.stringify(loadedProfile));
+        if (loadedBlocks) localStorage.setItem('linkinbio_cached_blocks', JSON.stringify(loadedBlocks));
+      } catch (_) {}
 
       // Check published state
       if (loadedProfile) {
@@ -120,6 +151,10 @@ export function DashboardProvider({ children }) {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         load();
       } else if (event === 'SIGNED_OUT') {
+        try {
+          localStorage.removeItem('linkinbio_cached_profile');
+          localStorage.removeItem('linkinbio_cached_blocks');
+        } catch (_) {}
         setProfile(null);
         setBlocks([]);
         setUserId(null);
