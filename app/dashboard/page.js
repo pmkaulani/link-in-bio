@@ -25,7 +25,11 @@ export default function BlocksPage() {
 
   async function handlePost() {
     setPosting(true);
-    await publishChanges();
+    const didPublish = await publishChanges();
+    if (!didPublish) {
+      setPosting(false);
+      return;
+    }
     setQuestFlag('published');
     setTimeout(() => {
       setPosting(false);

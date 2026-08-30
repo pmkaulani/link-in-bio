@@ -3,17 +3,30 @@ import PublicProfile from '../../components/themes/PublicProfile';
 import LocalPublicPage from '../../components/LocalPublicPage';
 import { notFound } from 'next/navigation';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const PUBLIC_PROFILE_COLUMNS =
   'id, username, display_name, bio, avatar_url, theme, background_color, background_type, background_value, text_color, primary_color, button_style, button_radius, font_family, font, animation, bg_effect, cursor_glow, is_verified, publication_status, account_status, published_profile, published_blocks, custom_css, socials, created_at';
 
+function normalizeUsernameParam(username) {
+  const value = Array.isArray(username) ? username[0] : username;
+  const raw = String(value || '').trim();
+  try {
+    return decodeURIComponent(raw).replace(/^@/, '').toLowerCase();
+  } catch (_) {
+    return raw.replace(/^@/, '').toLowerCase();
+  }
+}
+
 async function getProfile(username) {
+  const cleanUsername = normalizeUsernameParam(username);
+  if (!cleanUsername) return null;
   if (isLocalMode) return null;
   const { data, error } = await supabase
     .from('profiles')
     .select(PUBLIC_PROFILE_COLUMNS)
-    .eq('username', username)
+    .eq('username', cleanUsername)
     .maybeSingle();
   if (error) console.error('[PublicPage] getProfile error:', error.message, error.details);
   return data || null;

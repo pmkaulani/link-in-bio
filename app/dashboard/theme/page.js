@@ -24,7 +24,11 @@ export default function ThemePage() {
 
   async function handlePost() {
     setPosting(true);
-    await publishChanges();
+    const didPublish = await publishChanges();
+    if (!didPublish) {
+      setPosting(false);
+      return;
+    }
     setTimeout(() => {
       setPosting(false);
       setPostedSuccess(true);

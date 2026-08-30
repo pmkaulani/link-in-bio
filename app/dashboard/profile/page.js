@@ -327,7 +327,11 @@ export default function ProfilePage() {
 
   async function handlePost() {
     setPosting(true);
-    await publishChanges();
+    const didPublish = await publishChanges();
+    if (!didPublish) {
+      setPosting(false);
+      return;
+    }
     setTimeout(() => {
       setPosting(false);
       setPostedSuccess(true);

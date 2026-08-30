@@ -178,6 +178,13 @@ export function DashboardProvider({ children }) {
     const cleanProfile = { ...profile };
     delete cleanProfile.published_blocks;
     delete cleanProfile.published_profile;
+    delete cleanProfile.published_at;
+
+    const nextPublicationStatus =
+      !cleanProfile.publication_status || cleanProfile.publication_status === 'draft'
+        ? 'published'
+        : cleanProfile.publication_status;
+    cleanProfile.publication_status = nextPublicationStatus;
 
     const cleanBlocks = (blocks || []).map((b, idx) => ({
       id: b.id,
@@ -191,6 +198,7 @@ export function DashboardProvider({ children }) {
 
     const updatedProfile = {
       ...profile,
+      publication_status: nextPublicationStatus,
       published_blocks: cleanBlocks,
       published_profile: cleanProfile,
       published_at: publishedAt,
@@ -205,6 +213,7 @@ export function DashboardProvider({ children }) {
       // 1. Update profile with the new published snapshot and latest live fields
       const { error: profileError } = await supabase.from('profiles').update({
         ...cleanProfile,
+        publication_status: nextPublicationStatus,
         published_blocks: cleanBlocks,
         published_profile: cleanProfile,
         published_at: publishedAt,
@@ -214,15 +223,17 @@ export function DashboardProvider({ children }) {
       if (profileError) {
         console.warn('Primary profile update had error, falling back:', profileError);
         // Fallback update without JSON snapshot columns if schema is legacy
-        await supabase.from('profiles').update({
+        const { error: fallbackError } = await supabase.from('profiles').update({
           ...cleanProfile,
+          publication_status: nextPublicationStatus,
           updated_at: publishedAt,
         }).eq('id', userId);
+        if (fallbackError) throw fallbackError;
       }
 
       // 2. Ensure each block in blocks table is synced and persisted
       if (cleanBlocks.length > 0) {
-        await Promise.all(
+        const blockResults = await Promise.all(
           cleanBlocks.map((b) =>
             supabase.from('blocks').upsert({
               id: b.id,
@@ -234,6 +245,8 @@ export function DashboardProvider({ children }) {
             })
           )
         );
+        const blockError = blockResults.find((result) => result?.error)?.error;
+        if (blockError) throw blockError;
       }
 
       markSaved();

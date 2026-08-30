@@ -109,7 +109,11 @@ function InnerLayout({ children }) {
 
   async function handleHeaderPublish() {
     setPostingHeader(true);
-    await publishChanges();
+    const didPublish = await publishChanges();
+    if (!didPublish) {
+      setPostingHeader(false);
+      return;
+    }
     setTimeout(() => setPostingHeader(false), 500);
   }
 
