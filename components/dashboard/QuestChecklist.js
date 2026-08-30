@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Check, ChevronDown, ChevronUp, Sparkles, Trophy, ArrowRight, X } from 'lucide-react';
@@ -67,14 +67,14 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
   // If completed 100% and user dismissed/collapsed, render a compact completion badge
   if (pct === 100 && isCollapsed) {
     return (
-      <div className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-950 shadow-xs animate-profile-in">
+      <div className="mb-6 flex items-center justify-between rounded-2xl border border-zinc-300 bg-zinc-50/70 px-4 py-3 text-xs text-black shadow-xs animate-profile-in">
         <div className="flex items-center gap-2 font-bold">
-          <Trophy size={16} className="text-emerald-600" />
+          <Trophy size={16} className="text-black" />
           <span>All onboarding quests complete! (6/6)</span>
         </div>
         <button
           onClick={toggleCollapse}
-          className="font-bold text-emerald-700 hover:text-emerald-900 underline"
+          className="font-bold text-zinc-700 hover:text-black underline"
         >
           View checklist
         </button>
@@ -124,9 +124,7 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
         {/* Progress bar line */}
         <div className="h-1 w-full bg-zinc-100">
           <div
-            className={`h-full transition-all duration-500 ${
-              pct === 100 ? 'bg-emerald-500' : 'bg-black'
-            }`}
+            className="h-full transition-all duration-500 bg-black"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -148,7 +146,7 @@ export default function QuestChecklist({ profile, blocks, hasUnpostedChanges }) 
                   <div
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
                       quest.done
-                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                        ? 'border-black bg-black text-white'
                         : 'border-zinc-300 bg-white group-hover:border-black'
                     }`}
                   >
