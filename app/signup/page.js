@@ -204,7 +204,7 @@ function SignupForm() {
           text_color: vibe === 'editorial' ? '#111111' : vibe === 'cyber' ? '#10B981' : '#FFFFFF',
           primary_color: vibe === 'cyber' ? '#10B981' : vibe === 'creator' ? '#F97316' : '#000000',
           button_radius: vibe === 'editorial' ? 16 : 24,
-          is_verified: true,
+          is_verified: false,
           account_status: 'active',
           socials: { twitter: 'https://twitter.com', instagram: 'https://instagram.com' },
           onboarded: true,

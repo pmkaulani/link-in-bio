@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 import { APP_DOMAIN } from '../../lib/constants';
+import { compressAvatarImage } from '../../lib/imageUtils';
 
 const STEPS = [
   { label: 'You', desc: 'Identity & handle' },
@@ -169,41 +170,38 @@ export default function OnboardingPage() {
   async function handleAvatarFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Validate file type and size (max 2MB)
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
 
     setAvatarUploading(true);
     try {
+      // 1. Fast client-side downscaling & compression to 320x320 WebP (<25KB)
+      const { dataUrl, file: compressedBlob } = await compressAvatarImage(file, 320, 0.82);
+
       if (isSupabaseConfigured && userId) {
-        // Upload to Supabase storage
-        const ext = file.name.split('.').pop();
-        const path = `avatars/${userId}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        const path = `avatars/${userId}.webp`;
+        const { error } = await supabase.storage.from('avatars').upload(path, compressedBlob, {
+          contentType: 'image/webp',
+          upsert: true,
+        });
         if (!error) {
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
           setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
         } else {
-          // Fallback to data URL if storage isn't set up
-          const reader = new FileReader();
-          reader.onload = () => setAvatarUrl(reader.result);
-          reader.readAsDataURL(file);
+          // Fallback to compressed data URL
+          setAvatarUrl(dataUrl);
         }
       } else {
-        // Local mode — use data URL
-        const reader = new FileReader();
-        reader.onload = () => setAvatarUrl(reader.result);
-        reader.readAsDataURL(file);
+        setAvatarUrl(dataUrl);
       }
     } catch {
-      // Fallback to data URL on any error
-      const reader = new FileReader();
-      reader.onload = () => setAvatarUrl(reader.result);
-      reader.readAsDataURL(file);
+      // Fallback
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    setAvatarUploading(false);
-    // Reset input so same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function toggleSocial(social) {
@@ -371,12 +369,21 @@ export default function OnboardingPage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={avatarUploading}
-                    className="flex items-center justify-center gap-2 w-full rounded-[8px] border border-zinc-300 bg-white px-3 py-2.5 text-xs font-bold text-black hover:bg-zinc-100 transition shadow-xs disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 w-full rounded-[8px] bg-black px-3 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800 active:scale-95 shadow-xs disabled:opacity-50"
                   >
-                    <Upload size={14} />
-                    {avatarUploading ? 'Uploading...' : 'Upload from gallery'}
+                    {avatarUploading ? (
+                      <>
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-white shrink-0" />
+                        <span>Optimizing photo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} className="shrink-0" />
+                        <span>{avatarUrl ? 'Change photo' : 'Upload from gallery'}</span>
+                      </>
+                    )}
                   </button>
-                  <p className="text-[10px] text-zinc-400 text-center sm:text-left">JPG, PNG, WebP • Max 2 MB</p>
+                  <p className="text-[10px] text-zinc-400 text-center sm:text-left">Auto-optimized WebP • Fast loading</p>
                 </div>
               </div>
 

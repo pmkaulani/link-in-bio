@@ -1218,7 +1218,6 @@ export default function PublicProfile({ profile, blocks }) {
   const [reportTarget, setReportTarget] = useState('');
   const [reportTargetBlockId, setReportTargetBlockId] = useState(null);
   const [activeShareLink, setActiveShareLink] = useState(null);
-  const [inverted, setInverted] = useState(false);
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
@@ -1277,7 +1276,6 @@ export default function PublicProfile({ profile, blocks }) {
           ...getBackground(profile || {}),
           color: text,
           fontFamily: font,
-          filter: inverted ? 'invert(1) hue-rotate(180deg)' : 'none',
         }}
         onMouseMove={profile?.cursor_glow !== 'none' ? handleMove : undefined}
       >
@@ -1311,19 +1309,6 @@ export default function PublicProfile({ profile, blocks }) {
             </button>
 
             <div className="flex items-center gap-2">
-              {/* Monochrome Inversion Toggle */}
-              <button
-                type="button"
-                onClick={() => setInverted((prev) => !prev)}
-                className="flex h-8 items-center gap-1.5 rounded-full border border-current/20 bg-white/20 px-2.5 text-[11px] font-bold backdrop-blur-md transition hover:scale-105 active:scale-95 shadow-sm"
-                style={{ color: text }}
-                title="Toggle monochrome high-contrast inversion"
-                aria-label="Toggle monochrome contrast"
-              >
-                <Contrast size={13} />
-                <span className="text-[10px] uppercase tracking-wider font-extrabold">{inverted ? 'Normal' : 'Invert'}</span>
-              </button>
-
               <button
                 onClick={() => setShareOpen(true)}
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/20 backdrop-blur-md transition hover:scale-110 shadow-sm"

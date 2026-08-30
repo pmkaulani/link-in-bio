@@ -91,12 +91,13 @@ export default function SettingsPage() {
       }
     });
 
-    // Detect actual current client device truthfully
+    // Detect actual current client device & browser truthfully
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent;
       let device = 'Desktop Device';
-      let browser = 'Browser';
+      let browser = 'Web Browser';
 
+      // OS / Hardware
       if (/iPhone/i.test(ua)) device = 'iPhone';
       else if (/iPad/i.test(ua)) device = 'iPad';
       else if (/Android/i.test(ua)) device = 'Android Device';
@@ -104,16 +105,21 @@ export default function SettingsPage() {
       else if (/Windows/i.test(ua)) device = 'Windows PC';
       else if (/Linux/i.test(ua)) device = 'Linux Device';
 
-      if (/Chrome/i.test(ua) && !/Edge|Edg|OPR/i.test(ua)) browser = 'Chrome';
-      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
-      else if (/Firefox/i.test(ua)) browser = 'Firefox';
-      else if (/Edg/i.test(ua)) browser = 'Edge';
+      // Browser detection (order matters because Chromium browsers include Chrome and Safari in UA)
+      if (/SamsungBrowser/i.test(ua)) browser = 'Samsung Internet';
+      else if (/Edg|Edge/i.test(ua)) browser = 'Microsoft Edge';
       else if (/OPR|Opera/i.test(ua)) browser = 'Opera';
+      else if (/Brave/i.test(ua) || (navigator.brave && typeof navigator.brave.isBrave === 'function')) browser = 'Brave';
+      else if (/FxiOS/i.test(ua)) browser = 'Firefox (iOS)';
+      else if (/CriOS/i.test(ua)) browser = 'Chrome (iOS)';
+      else if (/Firefox/i.test(ua)) browser = 'Firefox';
+      else if (/Chrome/i.test(ua)) browser = 'Google Chrome';
+      else if (/Safari/i.test(ua)) browser = 'Safari';
 
       setSessions([
         {
           id: 'sess-current',
-          device: `${device} (Current Device)`,
+          device: device,
           browser: browser,
           lastActive: 'Active now',
           isCurrent: true,

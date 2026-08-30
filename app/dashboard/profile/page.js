@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../DashboardContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
-import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2, Upload } from 'lucide-react';
+import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2, Upload, Trash2, Camera, X } from 'lucide-react';
 import { APP_DOMAIN } from '../../../lib/constants';
+import { compressAvatarImage } from '../../../lib/imageUtils';
 
 const SOCIALS = ['instagram', 'youtube', 'tiktok', 'facebook', 'twitter', 'linkedin', 'spotify', 'telegram', 'whatsapp'];
 
@@ -311,6 +312,7 @@ function ShareCard({ username }) {
 export default function ProfilePage() {
   const { profile, userId, updateProfile, loading, hasUnpostedChanges, publishChanges } = useDashboard();
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [showRemovePhotoModal, setShowRemovePhotoModal] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postedSuccess, setPostedSuccess] = useState(false);
   const fileInputRef = useRef(null);
@@ -359,38 +361,39 @@ export default function ProfilePage() {
   async function handleAvatarUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be under 2 MB.');
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (JPEG, PNG, WebP).');
       return;
     }
 
     setAvatarUploading(true);
     try {
+      // 1. Fast client-side downscaling & compression to 320x320 WebP (<25KB)
+      const { dataUrl, file: compressedBlob } = await compressAvatarImage(file, 320, 0.82);
+
       if (isSupabaseConfigured && userId) {
-        const ext = file.name.split('.').pop();
-        const path = `avatars/${userId}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+        const path = `avatars/${userId}.webp`;
+        const { error } = await supabase.storage.from('avatars').upload(path, compressedBlob, {
+          contentType: 'image/webp',
+          upsert: true,
+        });
+
         if (!error) {
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
           handleField('avatar_url', urlData.publicUrl + '?t=' + Date.now());
         } else {
-          const reader = new FileReader();
-          reader.onload = () => handleField('avatar_url', reader.result);
-          reader.readAsDataURL(file);
+          // If storage bucket is not configured, fall back to the lightweight compressed WebP data URL
+          handleField('avatar_url', dataUrl);
         }
       } else {
-        const reader = new FileReader();
-        reader.onload = () => handleField('avatar_url', reader.result);
-        reader.readAsDataURL(file);
+        handleField('avatar_url', dataUrl);
       }
-    } catch {
-      const reader = new FileReader();
-      reader.onload = () => handleField('avatar_url', reader.result);
-      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Avatar optimization error:', err);
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    setAvatarUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function updateSocial(name, value) {
@@ -470,28 +473,40 @@ export default function ProfilePage() {
 
       <ShareCard username={profile.username} />
 
-      {/* Avatar Box */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 py-6 border-t border-zinc-200">
-        <div className="relative shrink-0">
+      {/* Avatar / Profile Photo Section */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 py-6 border-t border-zinc-200">
+        <div className="relative shrink-0 group">
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="" className="h-16 w-16 rounded-full border-2 border-zinc-200 object-cover shadow-sm" />
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="h-20 w-20 rounded-full border-2 border-zinc-200 object-cover shadow-sm transition group-hover:opacity-90"
+            />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 border border-zinc-200 text-lg font-bold text-black shadow-xs">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100 border border-zinc-200 text-xl font-black text-black shadow-xs">
               {(profile.display_name || profile.username || '?').slice(0, 2).toUpperCase()}
             </div>
           )}
-          {profile.avatar_url && (
-            <button
-              onClick={() => handleField('avatar_url', '')}
-              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border border-zinc-200 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50"
-              title="Remove avatar"
-            >
-              ×
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-black text-white shadow-md transition hover:bg-zinc-800 hover:scale-105 active:scale-95 disabled:opacity-50"
+            title="Change photo"
+            aria-label="Change profile photo"
+          >
+            <Camera size={13} />
+          </button>
         </div>
-        <div className="flex-1 w-full space-y-2 text-center sm:text-left">
-          <span className={labelClass}>Profile Photo</span>
+
+        <div className="flex-1 w-full space-y-2.5 text-center sm:text-left">
+          <div>
+            <span className="block text-xs font-bold text-black">Profile Photo</span>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Upload a clear photo or logo. We automatically optimize and compress it for instant mobile loading.
+            </p>
+          </div>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -499,37 +514,38 @@ export default function ProfilePage() {
             onChange={handleAvatarUpload}
             className="hidden"
           />
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarUploading}
-              className="flex items-center gap-1.5 rounded-[8px] border border-zinc-300 bg-white px-3 py-2 text-xs font-bold text-black hover:bg-zinc-100 transition shadow-xs disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-[8px] bg-black px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60 shadow-xs"
             >
-              <Upload size={14} />
-              {avatarUploading ? 'Uploading...' : 'Upload from gallery'}
+              {avatarUploading ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-white shrink-0" />
+                  <span>Optimizing photo...</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={13} className="shrink-0" />
+                  <span>{profile.avatar_url ? 'Change photo' : 'Upload photo'}</span>
+                </>
+              )}
             </button>
+
             {profile.avatar_url && (
               <button
                 type="button"
-                onClick={() => handleField('avatar_url', '')}
-                className="rounded-[8px] border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition"
+                onClick={() => setShowRemovePhotoModal(true)}
+                disabled={avatarUploading}
+                className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:text-red-600 hover:border-red-200 hover:bg-red-50/50 transition shadow-2xs disabled:opacity-50"
               >
-                Remove photo
+                <Trash2 size={13} />
+                <span>Remove</span>
               </button>
             )}
-          </div>
-          <div>
-            <label className="block text-[10px] text-zinc-400 font-semibold mt-1">
-              Or paste image URL:
-              <input
-                type="url"
-                value={profile.avatar_url || ''}
-                onChange={(e) => handleField('avatar_url', e.target.value)}
-                placeholder="https://..."
-                className="mt-1 w-full rounded-[8px] border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-black placeholder:text-zinc-400 focus:border-black focus:outline-none"
-              />
-            </label>
           </div>
         </div>
       </div>
@@ -580,6 +596,52 @@ export default function ProfilePage() {
 
       {/* Custom Domain Settings Card */}
       <CustomDomainCard profile={profile} userId={userId || profile?.id} />
+
+      {/* Remove Photo Confirmation Modal */}
+      {showRemovePhotoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-profile-in">
+          <div className="w-full max-w-sm rounded-[16px] border border-zinc-200 bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-red-600">
+                  <Trash2 size={16} />
+                </span>
+                <h3 className="text-sm font-black text-black">Remove profile photo?</h3>
+              </div>
+              <button
+                onClick={() => setShowRemovePhotoModal(false)}
+                className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-black transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Your profile picture will be removed and replaced with your default name initials. You can upload a new photo at any time.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRemovePhotoModal(false)}
+                className="rounded-[8px] border border-zinc-200 bg-zinc-50 px-3.5 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleField('avatar_url', '');
+                  setShowRemovePhotoModal(false);
+                }}
+                className="rounded-[8px] bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition shadow-xs"
+              >
+                Yes, Remove Photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

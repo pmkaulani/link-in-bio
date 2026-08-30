@@ -33,6 +33,7 @@ import {
   Eye,
   MousePointerClick,
   TrendingUp,
+  Contrast,
 } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
 import { ICONS } from '../lib/icons';
@@ -345,6 +346,17 @@ export default function Home() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setIsInverted((prev) => !prev)}
+            className="flex h-8 items-center gap-1.5 rounded-full border border-white/20 bg-zinc-900/80 px-2.5 text-[11px] font-bold text-zinc-300 transition hover:text-white hover:border-white/40 active:scale-95 shadow-xs"
+            title="Toggle monochrome high-contrast inversion (or press 'B' on desktop)"
+            aria-label="Toggle contrast mode"
+          >
+            <Contrast size={13} />
+            <span className="hidden sm:inline">{isInverted ? 'Normal' : 'Invert'}</span>
+          </button>
+
           <Link
             href="/login"
             className="rounded-[8px] px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-zinc-300 transition hover:text-white"
