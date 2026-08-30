@@ -10,11 +10,12 @@ const PUBLIC_PROFILE_COLUMNS =
 
 async function getProfile(username) {
   if (isLocalMode) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select(PUBLIC_PROFILE_COLUMNS)
     .eq('username', username)
     .maybeSingle();
+  if (error) console.error('[PublicPage] getProfile error:', error.message, error.details);
   return data || null;
 }
 
@@ -152,7 +153,17 @@ export default async function PublicPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(profileJsonLd) }}
       />
-      <PublicProfile profile={effectiveProfile} blocks={finalBlocks} />
+      <PublicProfile
+        profile={{
+          ...effectiveProfile,
+          // Always use live row values for trust & safety fields — never the stale snapshot
+          account_status: profile.account_status || 'active',
+          publication_status: profile.publication_status || 'published',
+          is_verified: profile.is_verified ?? effectiveProfile.is_verified,
+          socials: profile.socials ?? effectiveProfile.socials,
+        }}
+        blocks={finalBlocks}
+      />
     </>
   );
 }
