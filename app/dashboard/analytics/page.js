@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDashboard } from '../DashboardContext';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { setQuestFlag } from '../../../lib/questFlags';
 import {
   Globe,
   BarChart3,
@@ -16,6 +17,10 @@ export default function AnalyticsPage() {
   const { profile, blocks, userId, loading: dashboardLoading } = useDashboard();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setQuestFlag('viewed_analytics');
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !userId) { setLoading(false); return; }

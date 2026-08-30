@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2, Upload, Trash2, Camera, X } from 'lucide-react';
 import { APP_DOMAIN } from '../../../lib/constants';
 import { compressAvatarImage } from '../../../lib/imageUtils';
+import { setQuestFlag } from '../../../lib/questFlags';
 
 const SOCIALS = ['instagram', 'youtube', 'tiktok', 'facebook', 'twitter', 'linkedin', 'spotify', 'telegram', 'whatsapp'];
 
@@ -218,11 +219,13 @@ function ShareCard({ username }) {
   function copyLink() {
     navigator.clipboard.writeText(pageUrl).then(() => {
       setCopied(true);
+      setQuestFlag('shared_page');
       setTimeout(() => setCopied(false), 1500);
     });
   }
 
   function downloadQrWithBadge() {
+    setQuestFlag('shared_page');
     const canvas = document.createElement('canvas');
     const size = 600;
     canvas.width = size;
