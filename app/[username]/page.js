@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 export const revalidate = 60;
 
 const PUBLIC_PROFILE_COLUMNS =
-  'id, username, display_name, bio, avatar_url, theme, background_color, text_color, button_style, font, animation, is_verified, publication_status, account_status, published_profile, published_blocks, custom_css, created_at';
+  'id, username, display_name, bio, avatar_url, theme, background_color, background_type, background_value, text_color, primary_color, button_style, button_radius, font_family, font, animation, bg_effect, cursor_glow, is_verified, publication_status, account_status, published_profile, published_blocks, custom_css, socials, created_at';
 
 async function getProfile(username) {
   if (isLocalMode) return null;

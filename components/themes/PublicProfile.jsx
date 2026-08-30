@@ -1269,7 +1269,9 @@ export default function PublicProfile({ profile, blocks }) {
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
-  const font = FONT_MAP[profile?.font_family] || FONT_MAP.inter;
+  // theme editor saves as font_family; legacy DB column is font — support both
+  const fontKey = profile?.font_family || profile?.font || 'inter';
+  const font = FONT_MAP[fontKey] || FONT_MAP.inter;
 
   // Filter out disabled blocks (Trust & Safety moderation) and scheduled blocks
   const visibleBlocks = (blocks || []).filter((b) => b.is_visible !== false && !b.is_disabled && isWithinSchedule(b.data));
@@ -1316,7 +1318,7 @@ export default function PublicProfile({ profile, blocks }) {
     );
   }
 
-  const customFontUrl = GOOGLE_FONT_URLS[profile?.font];
+  const customFontUrl = GOOGLE_FONT_URLS[fontKey];
 
   return (
     <>
