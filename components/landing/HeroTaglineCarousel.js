@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const TAGLINES = [
   {
@@ -32,17 +32,30 @@ const TAGLINES = [
 export default function HeroTaglineCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    if (isPaused) return;
+    if (!containerRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isPaused || !isVisible) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % TAGLINES.length);
     }, 4200);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, isVisible]);
 
   return (
     <div
+      ref={containerRef}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       className="w-full select-none"

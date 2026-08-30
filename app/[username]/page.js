@@ -3,13 +3,18 @@ import PublicProfile from '../../components/themes/PublicProfile';
 import LocalPublicPage from '../../components/LocalPublicPage';
 import { notFound } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+export const revalidate = 60;
+
+const PUBLIC_PROFILE_COLUMNS =
+  'id, username, display_name, bio, avatar_url, theme, background_color, text_color, button_style, font, animation, is_verified, publication_status, account_status, published_profile, published_blocks, custom_css, created_at';
 
 async function getProfile(username) {
   if (isLocalMode) return null;
-  const { data } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
+  const { data } = await supabase
+    .from('profiles')
+    .select(PUBLIC_PROFILE_COLUMNS)
+    .eq('username', username)
+    .maybeSingle();
   return data || null;
 }
 
@@ -89,7 +94,11 @@ export default async function PublicPage({ params }) {
   if (Array.isArray(profile.published_blocks) && profile.published_blocks.length > 0) {
     finalBlocks = profile.published_blocks;
   } else {
-    const { data: dbBlocks } = await supabase.from('blocks').select('*').eq('profile_id', profile.id).order('position');
+    const { data: dbBlocks } = await supabase
+      .from('blocks')
+      .select('id, profile_id, type, data, position, is_visible, is_disabled')
+      .eq('profile_id', profile.id)
+      .order('position');
     finalBlocks = dbBlocks || [];
   }
 

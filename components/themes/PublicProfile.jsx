@@ -30,6 +30,7 @@ import {
   Contrast,
   Download,
   Globe,
+  Play,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../lib/constants';
 
@@ -1128,20 +1129,55 @@ function ImageBlock({ data }) {
   if (!data.url) return null;
   return (
     <div className="overflow-hidden rounded-2xl animate-profile-in shadow-md my-1 w-full">
-      <img src={data.url} alt={data.alt || ''} className="w-full object-cover" style={{ maxHeight: 320 }} />
+      <img
+        src={data.url}
+        alt={data.alt || ''}
+        loading="lazy"
+        decoding="async"
+        className="w-full object-cover"
+        style={{ maxHeight: 320 }}
+      />
       {data.caption && <p className="mt-2 text-center text-xs opacity-75">{data.caption}</p>}
     </div>
   );
 }
 
 function VideoBlock({ data }) {
+  const [isPlaying, setIsPlaying] = useState(false);
   const url = data.url || '';
   let embedUrl = '';
+  let posterUrl = null;
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
+  if (ytMatch) {
+    embedUrl = `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1`;
+    posterUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+  }
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  if (vimeoMatch) embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
   if (!embedUrl) return null;
+
+  if (!isPlaying && posterUrl) {
+    return (
+      <div
+        onClick={() => setIsPlaying(true)}
+        className="group relative overflow-hidden rounded-2xl animate-profile-in shadow-md my-1 w-full cursor-pointer bg-black"
+        style={{ aspectRatio: '16/9' }}
+      >
+        <img
+          src={posterUrl}
+          alt="Video thumbnail"
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/25 transition group-hover:bg-black/10">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-xl transition-transform group-hover:scale-110">
+            <Play size={22} className="ml-1 fill-black text-black" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl animate-profile-in shadow-md my-1 w-full" style={{ aspectRatio: '16/9' }}>
@@ -1150,6 +1186,7 @@ function VideoBlock({ data }) {
         className="h-full w-full border-0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
+        loading="lazy"
       />
     </div>
   );
@@ -1315,7 +1352,7 @@ export default function PublicProfile({ profile, blocks }) {
                 style={{ color: text }}
                 title="Share profile"
               >
-                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+                <Download size={13} className="rotate-[-45deg]" />
               </button>
             </div>
           </div>
@@ -1325,6 +1362,9 @@ export default function PublicProfile({ profile, blocks }) {
             <img
               src={profile.avatar_url}
               alt={profile.display_name || profile.username}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               className="mb-4 h-24 w-24 rounded-full border-[3px] border-current/20 object-cover shadow-2xl animate-profile-in"
             />
           ) : (

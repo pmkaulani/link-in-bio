@@ -21,34 +21,52 @@ export default function TiltCard({
   ...props
 }) {
   const cardRef = useRef(null);
-  const [rotate, setRotate] = useState({ x: 0, y: 0 });
-  const [glarePos, setGlarePos] = useState({ x: 50, y: 50, opacity: 0 });
+  const innerRef = useRef(null);
+  const glareRef = useRef(null);
+  const rafRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
   function handleMouseMove(e) {
-    if (!cardRef.current || prefersReducedMotion) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    if (!cardRef.current || !innerRef.current || prefersReducedMotion) return;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (!cardRef.current || !innerRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const rotateX = ((y - centerY) / centerY) * -maxTilt;
-    const rotateY = ((x - centerX) / centerX) * maxTilt;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
 
-    setRotate({ x: rotateX, y: rotateY });
-    setGlarePos({
-      x: (x / rect.width) * 100,
-      y: (y / rect.height) * 100,
-      opacity: 0.15,
+      const rotateX = ((y - centerY) / centerY) * -maxTilt;
+      const rotateY = ((x - centerX) / centerX) * maxTilt;
+
+      innerRef.current.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+
+      if (glareRef.current) {
+        const gx = (x / rect.width) * 100;
+        const gy = (y / rect.height) * 100;
+        glareRef.current.style.background = `radial-gradient(circle at ${gx.toFixed(1)}% ${gy.toFixed(1)}%, rgba(255,255,255,0.15) 0%, transparent 60%)`;
+      }
     });
   }
 
   function handleMouseLeave() {
-    setRotate({ x: 0, y: 0 });
-    setGlarePos((prev) => ({ ...prev, opacity: 0 }));
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (innerRef.current) {
+      innerRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    }
+    if (glareRef.current) {
+      glareRef.current.style.background = 'transparent';
+    }
   }
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   return (
     <div
@@ -62,8 +80,8 @@ export default function TiltCard({
       {...props}
     >
       <div
+        ref={innerRef}
         style={{
-          transform: prefersReducedMotion ? 'none' : `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transformStyle: prefersReducedMotion ? 'flat' : 'preserve-3d',
           transition: prefersReducedMotion ? 'none' : 'transform 0.15s ease-out',
         }}
@@ -73,10 +91,8 @@ export default function TiltCard({
 
         {glare && !prefersReducedMotion && (
           <div
+            ref={glareRef}
             className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
-            style={{
-              background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,${glarePos.opacity}) 0%, transparent 60%)`,
-            }}
           />
         )}
       </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   MoveUpRight,
   Play,
@@ -14,31 +14,52 @@ import { ICONS } from '../../lib/icons';
 
 export default function HeroLiveProfile({ theme, onThemeChange }) {
   const containerRef = useRef(null);
+  const phoneRef = useRef(null);
+  const spotlightRef = useRef(null);
+  const rafRef = useRef(null);
   const [hoveredLink, setHoveredLink] = useState(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   function handleMouseMove(e) {
     if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const rotateX = ((y - centerY) / centerY) * -8;
-    const rotateY = ((x - centerX) / centerX) * 8;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
 
-    setTilt({ x: rotateX, y: rotateY });
-    setMousePos({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 });
+      const rotateX = ((y - centerY) / centerY) * -8;
+      const rotateY = ((x - centerX) / centerX) * 8;
+
+      if (phoneRef.current) {
+        phoneRef.current.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+      }
+      if (spotlightRef.current) {
+        const px = ((x / rect.width) * 100).toFixed(1);
+        const py = ((y / rect.height) * 100).toFixed(1);
+        spotlightRef.current.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(255,255,255,0.15) 0%, transparent 60%)`;
+      }
+    });
   }
 
   function handleMouseLeave() {
-    setTilt({ x: 0, y: 0 });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (phoneRef.current) {
+      phoneRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    }
     setHoveredLink(null);
   }
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   // Get active persona links from current theme
   const links = theme?.links || [];
@@ -53,18 +74,17 @@ export default function HeroLiveProfile({ theme, onThemeChange }) {
     >
       {/* Dynamic Cursor Spotlight Behind Phone */}
       <div
+        ref={spotlightRef}
         className="pointer-events-none absolute -inset-10 rounded-[60px] transition-all duration-300 opacity-60 blur-2xl"
         style={{
-          background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, rgba(255,255,255,0.15) 0%, transparent 60%)`,
+          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15) 0%, transparent 60%)',
         }}
       />
 
-
-
       {/* Phone Frame Mockup with 3D Spatial Tilt */}
       <div
+        ref={phoneRef}
         style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
           transformStyle: 'preserve-3d',
           transition: 'transform 0.15s ease-out',
         }}
