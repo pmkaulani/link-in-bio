@@ -128,7 +128,7 @@ function AboutAccountModal({ profile, isOpen, onClose }) {
                 {profile.display_name || profile.username}
               </h4>
               {profile.is_verified && (
-                <ShieldCheck size={16} className="text-emerald-500" title="Verified Creator" />
+                <ShieldCheck size={16} className="text-black shrink-0" title="Verified Creator" />
               )}
             </div>
             <p className="mt-1 max-w-xs text-xs text-zinc-500 leading-relaxed">
@@ -1345,7 +1345,7 @@ export default function PublicProfile({ profile, blocks }) {
               @{profile?.username || 'username'}
             </h1>
             {profile?.is_verified && (
-              <ShieldCheck size={20} className="text-emerald-500 shrink-0" title="Verified Creator" />
+              <ShieldCheck size={20} style={{ color: text }} className="shrink-0" title="Verified Creator" />
             )}
           </div>
 

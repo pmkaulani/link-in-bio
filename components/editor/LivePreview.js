@@ -402,7 +402,7 @@ export default function LivePreview({ profile, blocks }) {
                 @{profile?.username || 'username'}
               </h1>
               {profile?.is_verified && (
-                <ShieldCheck size={16} className="text-emerald-500 shrink-0" title="Verified Creator" />
+                <ShieldCheck size={16} style={{ color: text }} className="shrink-0" title="Verified Creator" />
               )}
             </div>
 
