@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import SortableBlock from './SortableBlock';
 import SocialIconsManager from './SocialIconsManager';
+import AddBlockModal from './AddBlockModal';
 import { ICONS } from '../../lib/icons';
 import { QUICK_SOCIALS } from '../../lib/presets';
 import { useDashboard } from '../../app/dashboard/DashboardContext';
@@ -102,7 +103,7 @@ const PLATFORM_DESCRIPTIONS = {
 
 export default function BlockList({ blocks, onAdd, onUpdate, onDelete, onToggleVisibility, onReorder }) {
   const { selectedBlockId, setSelectedBlockId } = useDashboard();
-  const [showMenu, setShowMenu] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -129,44 +130,21 @@ export default function BlockList({ blocks, onAdd, onUpdate, onDelete, onToggleV
       {/* Primary Add Block Action Trigger (Top Placed) */}
       <div className="rounded-none border-y border-zinc-200 bg-white p-3">
         <button
-          onClick={() => setShowMenu(!showMenu)}
-          className={`flex w-full items-center justify-center gap-2 rounded-[8px] py-3 text-xs font-bold transition shadow-xs ${
-            showMenu
-              ? 'bg-black text-white'
-              : 'bg-black text-white hover:bg-zinc-800 active:scale-95'
-          }`}
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-[8px] py-3 text-xs font-bold transition shadow-xs bg-black text-white hover:bg-zinc-800 active:scale-95"
         >
-          <Plus size={16} strokeWidth={2.5} className={`transition-transform duration-200 ${showMenu ? 'rotate-45' : ''}`} />
-          <span>{showMenu ? 'Close block picker' : 'Add new block or link'}</span>
+          <Plus size={16} strokeWidth={2.5} />
+          <span>Add new block or link</span>
         </button>
-
-        {/* Expandable Block Type Grid */}
-        {showMenu && (
-          <div className="mt-3 pt-3 border-t border-zinc-100 animate-profile-in">
-            <div className="mb-2 px-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Choose block type</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {BLOCK_TYPES.map(({ type, label, icon: Icon, description }) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    onAdd(type);
-                    setShowMenu(false);
-                  }}
-                  className="flex flex-col items-start gap-1 rounded-[12px] border border-zinc-200/80 bg-zinc-50 p-3 text-left transition hover:border-black hover:bg-white active:scale-95 shadow-xs"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-black text-white">
-                    <Icon size={14} strokeWidth={2.25} />
-                  </span>
-                  <span className="text-xs font-bold text-black mt-1">{label}</span>
-                  <span className="text-[10px] leading-tight text-zinc-500">{description}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Guided Assistant Modal */}
+      <AddBlockModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAdd={onAdd}
+      />
 
       {/* Quick-add socials & platforms */}
       <div>

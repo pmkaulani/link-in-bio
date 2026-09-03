@@ -1,9 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ICONS, ICON_KEYS } from '../../lib/icons';
 import { ENTRANCE_ANIMATIONS as ANIMATIONS, HOVER_EFFECTS as HOVERS } from '../../lib/presets';
-import { Image as ImageIcon, Clock, Plus, X } from 'lucide-react';
+import { Image as ImageIcon, Clock, Plus, X, ChevronDown } from 'lucide-react';
 import CustomSelect from '../CustomSelect';
+import GuidedLinkInput from './GuidedLinkInput';
+import SocialIcon from '../ui/SocialIcon';
+import { PLATFORMS, detectPlatformFromUrl } from '../../lib/platformGuide';
 
 function Field({ label, children }) {
   return (
@@ -123,188 +126,246 @@ function ColorField({ value, onChange, defaultColor = '#000000' }) {
 // --- Per-type editors ---
 
 function LinkEditor({ data, onUpdate }) {
-  const TITLE_SUGGESTIONS = [
-    'Watch Latest Video',
-    'Photography Portfolio',
-    'Stream New Music',
-    'Shop Merch & Gear',
-    'Open Source Projects',
-    'Book a Strategy Call',
-    'Read Weekly Newsletter',
-    'Join VIP Community',
-  ];
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const PLATFORM_SUGGESTIONS = [
-    'Instagram',
-    'YouTube',
-    'Spotify',
-    'TikTok',
-    'GitHub',
-    'X (Twitter)',
-    'Discord',
-    'Official Store',
-    'Website',
-  ];
+  // Determine current active platform
+  const activePlatform = useMemo(() => {
+    if (data.platform && PLATFORMS[data.platform]) return data.platform;
+    if (data.icon && PLATFORMS[data.icon]) return data.icon;
+    const detected = detectPlatformFromUrl(data.url);
+    if (detected) return detected.platformKey;
+    return 'link';
+  }, [data.platform, data.icon, data.url]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div>
-        <Field label="Link Title (Primary Content / Action)">
-          <Input
-            value={data.title}
-            onChange={(v) => onUpdate({ title: v })}
-            placeholder="e.g. Watch Latest Video or Photography Portfolio"
-            maxLength={80}
-          />
-        </Field>
-        <div className="mt-1 flex flex-wrap gap-1">
-          {TITLE_SUGGESTIONS.slice(0, 4).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onUpdate({ title: s })}
-              className="rounded-[6px] bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-200"
+    <div className="space-y-4">
+      {/* 1. Primary: Where should this link go? */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+            Where should this link go?
+          </label>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-zinc-400">Platform:</span>
+            <select
+              value={activePlatform}
+              onChange={(e) => {
+                const newPlat = e.target.value;
+                const cfg = PLATFORMS[newPlat];
+                onUpdate({
+                  platform: newPlat,
+                  icon: cfg?.icon || newPlat,
+                  title: data.title || (cfg?.defaultTitle ? cfg.defaultTitle('') : ''),
+                });
+              }}
+              className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-bold text-black focus:border-black focus:outline-none"
             >
-              + {s}
-            </button>
-          ))}
+              {Object.entries(PLATFORMS).map(([k, p]) => (
+                <option key={k} value={k}>{p.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <Field label="Destination URL">
-          <Input value={data.url} onChange={(v) => onUpdate({ url: v })} placeholder="https://..." type="url" />
-        </Field>
-      </div>
-
-      <div className="sm:col-span-2">
-        <Field label="Platform / Subtitle (Secondary Label)">
-          <Input
-            value={data.subtitle}
-            onChange={(v) => onUpdate({ subtitle: v })}
-            placeholder="e.g. YouTube, Instagram, Spotify, or short note"
-            maxLength={120}
-          />
-        </Field>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Quick platform / tags:</span>
-          {PLATFORM_SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onUpdate({ subtitle: s })}
-              className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-zinc-700 shadow-xs hover:border-black hover:text-black"
-            >
-              + {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Field label="Icon">
-        <Select
-          value={data.icon || 'link'}
-          onChange={(v) => onUpdate({ icon: v })}
-          options={ICON_KEYS.map((k) => [k, ICONS[k].label])}
+        {/* Guided Platform Input */}
+        <GuidedLinkInput
+          platform={activePlatform}
+          url={data.url}
+          onChange={(patch) => onUpdate(patch)}
+          onPlatformChange={(newPlat) => {
+            const cfg = PLATFORMS[newPlat];
+            onUpdate({
+              platform: newPlat,
+              icon: cfg?.icon || newPlat,
+            });
+          }}
+          showContextualTip={true}
         />
-      </Field>
 
-      <Field label="Entrance animation">
-        <Select value={data.animation || 'slideUp'} onChange={(v) => onUpdate({ animation: v })} options={ANIMATIONS} />
-      </Field>
-
-      <Field label="Hover effect">
-        <Select value={data.hover_effect || 'lift'} onChange={(v) => onUpdate({ hover_effect: v })} options={HOVERS} />
-      </Field>
-
-      <Field label="Link Card Background">
-        <Select
-          value={data.background_type || 'solid'}
-          onChange={(v) => onUpdate({ background_type: v })}
-          options={[['solid', 'Solid Color'], ['gradient', 'Gradient'], ['transparent', 'Transparent'], ['image', 'Custom Image']]}
-        />
-      </Field>
-
-      {data.background_type === 'solid' && (
-        <Field label="Card Background Color">
-          <ColorField
-            value={data.background_value || '#000000'}
-            onChange={(v) => onUpdate({ background_value: v })}
-            defaultColor="#000000"
-          />
-        </Field>
-      )}
-
-      {data.background_type === 'gradient' && (
-        <div className="space-y-2">
-          <Field label="Card Gradient Style">
+        {/* Link Title (What visitors will see) */}
+        <div>
+          <Field label="Link title (what visitors will see)">
             <Input
-              value={data.background_value || GRADIENT_SWATCHES[0].value}
-              onChange={(v) => onUpdate({ background_value: v })}
-              placeholder="linear-gradient(...)"
+              value={data.title}
+              onChange={(v) => onUpdate({ title: v })}
+              placeholder={PLATFORMS[activePlatform]?.defaultTitle('') || 'e.g. Follow on Instagram'}
+              maxLength={80}
             />
           </Field>
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {GRADIENT_SWATCHES.map((g) => (
-              <button
-                key={g.label}
-                type="button"
-                onClick={() => onUpdate({ background_value: g.value })}
-                title={g.label}
-                className="h-6 px-2.5 rounded-[6px] text-[10px] font-bold text-white shadow-2xs hover:opacity-90 transition border border-white/20"
-                style={{ background: g.value }}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
         </div>
-      )}
-
-      {data.background_type === 'image' && (
-        <Field label="Card Background Image URL">
-          <Input
-            value={data.background_value || ''}
-            onChange={(v) => onUpdate({ background_value: v })}
-            placeholder="https://images.unsplash.com/..."
-            type="url"
-          />
-        </Field>
-      )}
-
-      <Field label="Text & Icon Color">
-        <ColorField
-          value={data.text_color || '#ffffff'}
-          onChange={(v) => onUpdate({ text_color: v })}
-          defaultColor="#ffffff"
-        />
-      </Field>
-
-      <div className="sm:col-span-2">
-        <Field label="Thumbnail image (replaces icon)">
-          <div className="flex items-center gap-3">
-            {data.thumbnail_url ? (
-              <img src={data.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-[6px] object-cover" />
-            ) : (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-zinc-100 text-zinc-400">
-                <ImageIcon size={16} />
-              </div>
-            )}
-            <Input value={data.thumbnail_url} onChange={(v) => onUpdate({ thumbnail_url: v })} placeholder="https://... image URL" type="url" />
-          </div>
-        </Field>
       </div>
 
-      <div className="sm:col-span-2">
-        <label className="flex items-center gap-2.5 text-xs font-bold text-zinc-800 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.is_featured || false}
-            onChange={(e) => onUpdate({ is_featured: e.target.checked })}
-            className="h-4 w-4 rounded border-zinc-300 accent-black focus:ring-black cursor-pointer"
-          />
-          Featured link (highlighted on public page)
-        </label>
+      {/* 2. Live Mini-Card Preview */}
+      <div className="rounded-xl border border-zinc-200 bg-zinc-900 p-3 text-white flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
+            <SocialIcon name={data.icon || activePlatform} className="text-[16px]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold truncate text-white">
+              {data.title || (PLATFORMS[activePlatform]?.defaultTitle ? PLATFORMS[activePlatform].defaultTitle('') : 'Explore Link')}
+            </p>
+            <p className="text-[10px] text-zinc-400 truncate">
+              {data.subtitle || PLATFORMS[activePlatform]?.defaultSubtitle || (data.url ? data.url.replace(/^https?:\/\//, '') : 'Tap to open')}
+            </p>
+          </div>
+        </div>
+        <span className="text-[11px] text-zinc-500 shrink-0">→</span>
+      </div>
+
+      {/* 3. Appearance (Simple, Clean) */}
+      <div className="pt-3 border-t border-zinc-100 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Choose an icon">
+            <Select
+              value={data.icon || activePlatform || 'link'}
+              onChange={(v) => onUpdate({ icon: v })}
+              options={ICON_KEYS.map((k) => [k, ICONS[k].label])}
+            />
+          </Field>
+
+          <Field label="Card style">
+            <Select
+              value={data.background_type || 'solid'}
+              onChange={(v) => onUpdate({ background_type: v })}
+              options={[
+                ['solid', 'Solid Color'],
+                ['gradient', 'Gradient'],
+                ['transparent', 'Transparent'],
+                ['image', 'Custom Image'],
+              ]}
+            />
+          </Field>
+        </div>
+
+        {data.background_type === 'solid' && (
+          <Field label="Card Background Color">
+            <ColorField
+              value={data.background_value || '#000000'}
+              onChange={(v) => onUpdate({ background_value: v })}
+              defaultColor="#000000"
+            />
+          </Field>
+        )}
+
+        {data.background_type === 'gradient' && (
+          <div className="space-y-2">
+            <Field label="Card Gradient Style">
+              <Input
+                value={data.background_value || GRADIENT_SWATCHES[0].value}
+                onChange={(v) => onUpdate({ background_value: v })}
+                placeholder="linear-gradient(...)"
+              />
+            </Field>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              {GRADIENT_SWATCHES.map((g) => (
+                <button
+                  key={g.label}
+                  type="button"
+                  onClick={() => onUpdate({ background_value: g.value })}
+                  title={g.label}
+                  className="h-6 px-2.5 rounded-[6px] text-[10px] font-bold text-white shadow-2xs hover:opacity-90 transition border border-white/20"
+                  style={{ background: g.value }}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data.background_type === 'image' && (
+          <Field label="Card Background Image URL">
+            <Input
+              value={data.background_value || ''}
+              onChange={(v) => onUpdate({ background_value: v })}
+              placeholder="https://images.unsplash.com/..."
+              type="url"
+            />
+          </Field>
+        )}
+      </div>
+
+      {/* 4. Advanced Settings (Progressive Disclosure) */}
+      <div className="pt-2 border-t border-zinc-100">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-black transition"
+        >
+          <ChevronDown size={14} className={`transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
+          <span>{showAdvanced ? 'Hide advanced settings' : 'Advanced settings (animations, new tab, subtitle)'}</span>
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-3 space-y-3 pt-3 border-t border-zinc-100 animate-fadeIn">
+            <div>
+              <Field label="Subtitle / Short Description">
+                <Input
+                  value={data.subtitle}
+                  onChange={(v) => onUpdate({ subtitle: v })}
+                  placeholder="e.g. Daily stories, new track, or promo code"
+                  maxLength={120}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Entrance animation">
+                <Select value={data.animation || 'slideUp'} onChange={(v) => onUpdate({ animation: v })} options={ANIMATIONS} />
+              </Field>
+
+              <Field label="Hover animation">
+                <Select value={data.hover_effect || 'lift'} onChange={(v) => onUpdate({ hover_effect: v })} options={HOVERS} />
+              </Field>
+            </div>
+
+            <Field label="Text & Icon Color">
+              <ColorField
+                value={data.text_color || '#ffffff'}
+                onChange={(v) => onUpdate({ text_color: v })}
+                defaultColor="#ffffff"
+              />
+            </Field>
+
+            <div>
+              <Field label="Custom Thumbnail Image (optional)">
+                <div className="flex items-center gap-3">
+                  {data.thumbnail_url ? (
+                    <img src={data.thumbnail_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400">
+                      <ImageIcon size={15} />
+                    </div>
+                  )}
+                  <Input value={data.thumbnail_url} onChange={(v) => onUpdate({ thumbnail_url: v })} placeholder="https://... image URL" type="url" />
+                </div>
+              </Field>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.open_in_new_tab !== false}
+                  onChange={(e) => onUpdate({ open_in_new_tab: e.target.checked })}
+                  className="h-4 w-4 rounded border-zinc-300 accent-black focus:ring-black cursor-pointer"
+                />
+                Open in a new tab (recommended)
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.is_featured || false}
+                  onChange={(e) => onUpdate({ is_featured: e.target.checked })}
+                  className="h-4 w-4 rounded border-zinc-300 accent-black focus:ring-black cursor-pointer"
+                />
+                Feature this link (adds highlight ring on profile)
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
