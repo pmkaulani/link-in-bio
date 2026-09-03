@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   PLATFORMS,
   cleanUsername,
@@ -29,14 +29,19 @@ export default function SocialLinksManager({ profile, updateProfile }) {
     return normalizeSocialAccounts(profile);
   }, [profile?.social_accounts, profile?.socials]);
 
+  const [localAccounts, setLocalAccounts] = useState(accounts);
+  useEffect(() => {
+    setLocalAccounts(accounts);
+  }, [accounts]);
+
   function handleSaveAccount(accountData) {
     let updated = [];
-    const exists = accounts.some((a) => a.id === accountData.id);
+    const exists = localAccounts.some((a) => a.id === accountData.id);
 
     if (exists) {
-      updated = accounts.map((a) => (a.id === accountData.id ? accountData : a));
+      updated = localAccounts.map((a) => (a.id === accountData.id ? accountData : a));
     } else {
-      updated = [...accounts, accountData];
+      updated = [...localAccounts, accountData];
     }
 
     // Ensure only one primary account per platform
@@ -49,17 +54,18 @@ export default function SocialLinksManager({ profile, updateProfile }) {
       });
     }
 
+    setLocalAccounts(updated);
+
     const syncedSocials = syncSocialsWithAccounts(updated, profile?.socials || {});
     updateProfile({
-      social_accounts: updated,
       socials: syncedSocials,
     });
     setAccountToEdit(null);
   }
 
   function handleDeleteAccount(accountId) {
-    const target = accounts.find((a) => a.id === accountId);
-    let updated = accounts.filter((a) => a.id !== accountId);
+    const target = localAccounts.find((a) => a.id === accountId);
+    let updated = localAccounts.filter((a) => a.id !== accountId);
 
     // If deleted account was primary and others exist for same platform, promote the first one
     if (target?.is_primary) {
@@ -69,27 +75,29 @@ export default function SocialLinksManager({ profile, updateProfile }) {
       }
     }
 
+    setLocalAccounts(updated);
+
     const syncedSocials = syncSocialsWithAccounts(updated, profile?.socials || {});
     updateProfile({
-      social_accounts: updated,
       socials: syncedSocials,
     });
   }
 
   function handleSetPrimary(accountId) {
-    const target = accounts.find((a) => a.id === accountId);
+    const target = localAccounts.find((a) => a.id === accountId);
     if (!target) return;
 
-    const updated = accounts.map((a) => {
+    const updated = localAccounts.map((a) => {
       if (a.platform === target.platform) {
         return { ...a, is_primary: a.id === accountId };
       }
       return a;
     });
 
+    setLocalAccounts(updated);
+
     const syncedSocials = syncSocialsWithAccounts(updated, profile?.socials || {});
     updateProfile({
-      social_accounts: updated,
       socials: syncedSocials,
     });
   }
@@ -112,7 +120,7 @@ export default function SocialLinksManager({ profile, updateProfile }) {
           <div className="flex items-center gap-2">
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Social Accounts</h2>
             <span className="rounded-full bg-zinc-100 border border-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-700">
-              {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'}
+              {localAccounts.length} {localAccounts.length === 1 ? 'account' : 'accounts'}
             </span>
           </div>
           <p className="mt-0.5 text-xs text-zinc-400">
@@ -131,11 +139,11 @@ export default function SocialLinksManager({ profile, updateProfile }) {
       </div>
 
       {/* Accounts Collection List */}
-      {accounts.length > 0 ? (
+      {localAccounts.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {accounts.map((acc) => {
+          {localAccounts.map((acc) => {
             const pCfg = PLATFORMS[acc.platform] || { label: acc.platform, icon: acc.platform };
-            const samePlatformCount = accounts.filter((a) => a.platform === acc.platform).length;
+            const samePlatformCount = localAccounts.filter((a) => a.platform === acc.platform).length;
 
             return (
               <div
@@ -251,7 +259,7 @@ export default function SocialLinksManager({ profile, updateProfile }) {
           setAccountToEdit(null);
         }}
         accountToEdit={accountToEdit}
-        existingAccounts={accounts}
+        existingAccounts={localAccounts}
         onSave={handleSaveAccount}
       />
     </div>

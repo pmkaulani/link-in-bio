@@ -45,6 +45,46 @@ function normalizeForComparison(obj) {
   return JSON.stringify(clean);
 }
 
+const VALID_PROFILE_COLUMNS = new Set([
+  'username',
+  'display_name',
+  'bio',
+  'avatar_url',
+  'theme',
+  'font_family',
+  'primary_color',
+  'text_color',
+  'background_type',
+  'background_value',
+  'bg_effect',
+  'button_style',
+  'button_radius',
+  'cursor_glow',
+  'motion_preference',
+  'socials',
+  'layout',
+  'onboarded',
+  'is_verified',
+  'account_status',
+  'publication_status',
+  'suspension_reason',
+  'sensitive_content',
+  'published_profile',
+  'published_blocks',
+  'published_at',
+]);
+
+function sanitizeProfileForDb(obj) {
+  if (!obj || typeof obj !== 'object') return {};
+  const sanitized = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (VALID_PROFILE_COLUMNS.has(key)) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
 export function DashboardProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [blocks, setBlocks] = useState([]);
@@ -183,8 +223,9 @@ export function DashboardProvider({ children }) {
 
     try {
       // 1. Update profile with the new published snapshot and latest live fields
+      const dbProfile = sanitizeProfileForDb(cleanProfile);
       const { error: profileError } = await supabase.from('profiles').update({
-        ...cleanProfile,
+        ...dbProfile,
         publication_status: nextPublicationStatus,
         published_blocks: cleanBlocks,
         published_profile: cleanProfile,
@@ -196,7 +237,7 @@ export function DashboardProvider({ children }) {
         console.warn('Primary profile update had error, falling back:', profileError);
         // Fallback update without JSON snapshot columns if schema is legacy
         const { error: fallbackError } = await supabase.from('profiles').update({
-          ...cleanProfile,
+          ...dbProfile,
           publication_status: nextPublicationStatus,
           updated_at: publishedAt,
         }).eq('id', userId);
@@ -374,8 +415,11 @@ export function DashboardProvider({ children }) {
 
     try {
       if (profile) {
-        const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id);
-        if (error) throw error;
+        const dbPatch = sanitizeProfileForDb(patch);
+        if (Object.keys(dbPatch).length > 0) {
+          const { error } = await supabase.from('profiles').update(dbPatch).eq('id', profile.id);
+          if (error) throw error;
+        }
       }
       markSaved();
     } catch (err) {
