@@ -2,20 +2,36 @@
 import { useState } from 'react';
 import { useDashboard } from '../../app/dashboard/DashboardContext';
 import { ICONS } from '../../lib/icons';
+import SocialIcon from '../ui/SocialIcon';
 import { Check, X, Edit2, Share2 } from 'lucide-react';
 
 const SUPPORTED_SOCIALS = [
-  { id: 'telegram', name: 'Telegram', prefix: 'https://t.me/' },
-  { id: 'facebook', name: 'Facebook', prefix: 'https://facebook.com/' },
+  { id: 'snapchat', name: 'Snapchat', prefix: 'https://snapchat.com/add/' },
   { id: 'instagram', name: 'Instagram', prefix: 'https://instagram.com/' },
   { id: 'tiktok', name: 'TikTok', prefix: 'https://tiktok.com/@' },
   { id: 'youtube', name: 'YouTube', prefix: 'https://youtube.com/@' },
   { id: 'twitter', name: 'X / Twitter', prefix: 'https://x.com/' },
   { id: 'whatsapp', name: 'WhatsApp', prefix: 'https://wa.me/' },
-  { id: 'spotify', name: 'Spotify', prefix: 'https://open.spotify.com/artist/' },
+  { id: 'threads', name: 'Threads', prefix: 'https://threads.net/@' },
+  { id: 'facebook', name: 'Facebook', prefix: 'https://facebook.com/' },
+  { id: 'pinterest', name: 'Pinterest', prefix: 'https://pinterest.com/' },
+  { id: 'reddit', name: 'Reddit', prefix: 'https://reddit.com/user/' },
   { id: 'linkedin', name: 'LinkedIn', prefix: 'https://linkedin.com/in/' },
+  { id: 'telegram', name: 'Telegram', prefix: 'https://t.me/' },
   { id: 'discord', name: 'Discord', prefix: 'https://discord.gg/' },
+  { id: 'spotify', name: 'Spotify', prefix: 'https://open.spotify.com/artist/' },
+  { id: 'applemusic', name: 'Apple Music', prefix: 'https://music.apple.com/' },
+  { id: 'soundcloud', name: 'SoundCloud', prefix: 'https://soundcloud.com/' },
+  { id: 'twitch', name: 'Twitch', prefix: 'https://twitch.tv/' },
+  { id: 'kick', name: 'Kick', prefix: 'https://kick.com/' },
+  { id: 'patreon', name: 'Patreon', prefix: 'https://patreon.com/' },
+  { id: 'substack', name: 'Substack', prefix: 'https://substack.com/@' },
+  { id: 'medium', name: 'Medium', prefix: 'https://medium.com/@' },
   { id: 'github', name: 'GitHub', prefix: 'https://github.com/' },
+  { id: 'paypal', name: 'PayPal', prefix: 'https://paypal.me/' },
+  { id: 'cashapp', name: 'Cash App', prefix: 'https://cash.app/$' },
+  { id: 'venmo', name: 'Venmo', prefix: 'https://venmo.com/' },
+  { id: 'phone', name: 'Phone', prefix: 'tel:' },
   { id: 'email', name: 'Email', prefix: 'mailto:' },
 ];
 
@@ -35,11 +51,25 @@ export default function SocialIconsManager() {
     const def = SUPPORTED_SOCIALS.find((s) => s.id === socialId);
     setIsOpen(true);
     setEditingSocial(socialId);
-    setUrlInput(existing || def?.prefix || 'https://');
+    if (socialId === 'whatsapp') {
+      setUrlInput(existing || '');
+    } else {
+      setUrlInput(existing || def?.prefix || 'https://');
+    }
   }
 
   function handleSave(socialId) {
-    const clean = urlInput.trim();
+    let clean = urlInput.trim();
+    if (socialId === 'whatsapp' && clean) {
+      if (!/^https?:\/\//i.test(clean)) {
+        if (/^(wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com)/i.test(clean)) {
+          clean = `https://${clean}`;
+        } else {
+          const digits = clean.replace(/[^0-9]/g, '');
+          if (digits) clean = `https://wa.me/${digits}`;
+        }
+      }
+    }
     const updated = { ...currentSocials };
     if (!clean) {
       delete updated[socialId];
@@ -105,7 +135,7 @@ export default function SocialIconsManager() {
                 }`}
                 onClick={() => handleOpenEdit(socialId)}
               >
-                <i className={meta.className} style={{ color: isEditingThis ? '#ffffff' : meta.color }} />
+                <SocialIcon name={meta.className} style={{ color: isEditingThis ? '#ffffff' : meta.color }} className="text-[14px]" />
                 <span>{meta.label}</span>
                 <button
                   type="button"
@@ -159,7 +189,7 @@ export default function SocialIconsManager() {
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <i className={meta.className} style={{ color: isSelected ? '#ffffff' : isAdded ? meta.color : '#71717A' }} />
+                    <SocialIcon name={meta.className} style={{ color: isSelected ? '#ffffff' : isAdded ? meta.color : '#71717A' }} className="text-[15px]" />
                     <span className="text-xs font-semibold truncate">{social.name}</span>
                   </div>
                   {isAdded && !isSelected && <Check size={13} className="text-black shrink-0" />}
@@ -184,7 +214,13 @@ export default function SocialIconsManager() {
                 type="text"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="Enter profile link or username..."
+                placeholder={
+                  editingSocial === 'whatsapp'
+                    ? 'Enter phone with country code (+1 555 123 4567) or link...'
+                    : editingSocial === 'phone'
+                    ? 'Enter phone number (+1 555 123 4567)...'
+                    : 'Enter profile link or username...'
+                }
                 autoFocus
                 className="flex-1 min-w-[140px] rounded-[8px] border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none"
               />

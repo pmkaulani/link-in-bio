@@ -111,22 +111,49 @@ export async function POST(req) {
         return NextResponse.json({ success: true, message: 'Username is unchanged.', username: clean });
       }
 
-      // Enforce 14-day cooldown limit per username change (stored in socials._handle_changed_at or username_changed_at)
-      const lastChangedTime =
-        currentProfile?.socials?._handle_changed_at || currentProfile?.username_changed_at || null;
-      if (lastChangedTime) {
-        const lastChanged = new Date(lastChangedTime).getTime();
-        const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
-        const COOLDOWN_DAYS = 14;
-        if (daysSince < COOLDOWN_DAYS) {
-          const daysRemaining = Math.ceil(COOLDOWN_DAYS - daysSince);
-          return NextResponse.json(
-            {
-              error: `Handle changes are limited to once every 14 days to prevent broken links and impersonation. You can change your handle again in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`,
-            },
-            { status: 429 }
-          );
+      // Enforce limit of 2 username changes every 2 weeks (14 days)
+      const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+
+      let rawTimestamps = Array.isArray(currentProfile?.socials?._handle_change_timestamps)
+        ? currentProfile.socials._handle_change_timestamps
+        : [];
+
+      // Fallback: if array is empty but _handle_changed_at exists, seed it
+      if (rawTimestamps.length === 0 && (currentProfile?.socials?._handle_changed_at || currentProfile?.username_changed_at)) {
+        const singleChange = new Date(currentProfile?.socials?._handle_changed_at || currentProfile?.username_changed_at).getTime();
+        if (!isNaN(singleChange)) {
+          rawTimestamps = [singleChange];
         }
+      }
+
+      // Filter to changes made within the active 14-day rolling window
+      const recentChanges = rawTimestamps
+        .map((t) => (typeof t === 'string' ? new Date(t).getTime() : Number(t)))
+        .filter((t) => !isNaN(t) && now - t < FOURTEEN_DAYS_MS)
+        .sort((a, b) => a - b); // oldest first
+
+      const MAX_CHANGES = 2;
+      if (recentChanges.length >= MAX_CHANGES) {
+        const oldestChange = recentChanges[0];
+        const resetsAt = oldestChange + FOURTEEN_DAYS_MS;
+        const msRemaining = Math.max(0, resetsAt - now);
+        const daysRemaining = Math.floor(msRemaining / (1000 * 60 * 60 * 24));
+        const hoursRemaining = Math.ceil((msRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        let timeStr = `${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`;
+        if (daysRemaining === 0) {
+          timeStr = `${hoursRemaining} hour${hoursRemaining === 1 ? '' : 's'}`;
+        } else if (hoursRemaining > 0) {
+          timeStr = `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} and ${hoursRemaining} hour${hoursRemaining === 1 ? '' : 's'}`;
+        }
+
+        return NextResponse.json(
+          {
+            error: `Handle changes are limited to 2 times every 2 weeks to prevent broken links and impersonation. You have used your 2 changes and can change your handle again in ${timeStr}.`,
+          },
+          { status: 429 }
+        );
       }
 
       // Check reservation blacklist in DB
@@ -179,7 +206,8 @@ export async function POST(req) {
 
       const updatedSocials = {
         ...(currentProfile?.socials || {}),
-        _handle_changed_at: new Date().toISOString(),
+        _handle_changed_at: new Date(now).toISOString(),
+        _handle_change_timestamps: [...recentChanges, now],
         _handle_history: existingHistory.slice(0, 10),
       };
 

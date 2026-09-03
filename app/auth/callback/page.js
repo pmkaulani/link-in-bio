@@ -77,14 +77,27 @@ export default function AuthCallbackPage() {
 
         const user = session.user;
 
+        const isGoogleAuth =
+          user.app_metadata?.provider === 'google' ||
+          user.identities?.some((id) => id.provider === 'google');
+
         // 5. Check if existing profile exists
         const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('id, onboarded')
+          .select('id, onboarded, socials')
           .eq('id', user.id)
           .maybeSingle();
 
         if (existingProfile) {
+          const hasPasswordSet = existingProfile?.socials?._password_set === true;
+          const promptDismissed = existingProfile?.socials?._password_prompt_dismissed === true;
+
+          // Only prompt for password if never set and never dismissed
+          if (isGoogleAuth && !hasPasswordSet && !promptDismissed) {
+            router.push('/set-password');
+            return;
+          }
+
           router.push(existingProfile.onboarded ? '/dashboard' : '/onboarding');
           return;
         }
@@ -106,6 +119,9 @@ export default function AuthCallbackPage() {
             avatar_url: user.user_metadata?.avatar_url || '',
             theme: user.user_metadata?.theme || 'growth',
             onboarded: true,
+            socials: {
+              _google_signup: isGoogleAuth,
+            },
           });
 
           if (!err || err.code === '23505') {
@@ -115,8 +131,12 @@ export default function AuthCallbackPage() {
           username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
-        // Proceed to dashboard
-        router.push('/dashboard');
+        // First time Google signup: prompt to set password once
+        if (isGoogleAuth) {
+          router.push('/set-password');
+        } else {
+          router.push('/dashboard');
+        }
       } catch (err) {
         console.error('[auth/callback] Unexpected error:', err);
         setError('Sign in encountered an issue. Redirecting to login...');

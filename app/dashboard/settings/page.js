@@ -286,6 +286,8 @@ export default function SettingsPage() {
       return;
     }
 
+    const hasPasswordSet = profile?.socials?._password_set === true;
+
     setLoading(true);
     try {
       const res = await callAccountAction({ action: 'change_password', oldPassword, newPassword });
@@ -295,9 +297,10 @@ export default function SettingsPage() {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      showToast('Password changed successfully.', 'success');
+      updateProfile({ socials: { ...(profile?.socials || {}), _password_set: true } });
+      showToast(hasPasswordSet ? 'Password changed successfully.' : 'Password created successfully.', 'success');
     } catch (err) {
-      showToast(err.message || 'Failed to change password.', 'error');
+      showToast(err.message || 'Failed to update password.', 'error');
     } finally {
       setLoading(false);
     }
@@ -607,6 +610,9 @@ export default function SettingsPage() {
                   Save Username
                 </button>
               </div>
+              <p className="text-[11px] text-zinc-500">
+                You can change your handle up to <strong>2 times every 2 weeks</strong> to prevent broken links and protect your brand.
+              </p>
             </form>
 
             {/* Claimed Handles History & Log */}
@@ -811,75 +817,89 @@ export default function SettingsPage() {
       {activeTab === 'security' && (
         <div className="space-y-6 animate-profile-in">
           {/* Change Password Card */}
-          <form onSubmit={handleChangePassword} className="py-6 border-t border-zinc-200 space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-black flex items-center gap-2">
-              <Key size={14} className="text-black" />
-              Change Password
-            </h2>
+          {(() => {
+            const hasPasswordSet = profile?.socials?._password_set === true;
+            return (
+              <form onSubmit={handleChangePassword} className="py-6 border-t border-zinc-200 space-y-4">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-black flex items-center gap-2">
+                    <Key size={14} className="text-black" />
+                    {hasPasswordSet ? 'Change Password' : 'Set Account Password'}
+                  </h2>
+                  {!hasPasswordSet && (
+                    <p className="text-[11px] text-zinc-500 mt-1">
+                      You signed up with Google. Setting a password allows you to sign in directly with your email address in addition to Google.
+                    </p>
+                  )}
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-zinc-500">Current Password</label>
-                <input
-                  type="password"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-zinc-500">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-zinc-500">Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
-                />
-              </div>
-            </div>
+                <div className={`grid grid-cols-1 ${hasPasswordSet ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+                  {hasPasswordSet && (
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-zinc-500">Current Password</label>
+                      <input
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-zinc-500">New Password</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-zinc-500">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-[8px] border border-zinc-300 bg-zinc-50 p-2.5 text-xs font-bold text-black outline-none focus:border-black focus:bg-white transition"
+                    />
+                  </div>
+                </div>
 
-            {newPassword.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${newPassword.length >= 8 ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
-                  {newPassword.length >= 8 ? '✓' : '•'} 8+ chars
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[A-Z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
-                  {/[A-Z]/.test(newPassword) ? '✓' : '•'} Uppercase (A-Z)
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[a-z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
-                  {/[a-z]/.test(newPassword) ? '✓' : '•'} Lowercase (a-z)
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
-                  {/[0-9]/.test(newPassword) ? '✓' : '•'} Number (0-9)
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[^A-Za-z0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
-                  {/[^A-Za-z0-9]/.test(newPassword) ? '✓' : '•'} Symbol (!@#$)
-                </span>
-              </div>
-            )}
+                {newPassword.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${newPassword.length >= 8 ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {newPassword.length >= 8 ? '✓' : '•'} 8+ chars
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[A-Z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {/[A-Z]/.test(newPassword) ? '✓' : '•'} Uppercase (A-Z)
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[a-z]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {/[a-z]/.test(newPassword) ? '✓' : '•'} Lowercase (a-z)
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {/[0-9]/.test(newPassword) ? '✓' : '•'} Number (0-9)
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${/[^A-Za-z0-9]/.test(newPassword) ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {/[^A-Za-z0-9]/.test(newPassword) ? '✓' : '•'} Symbol (!@#$)
+                    </span>
+                  </div>
+                )}
 
-            <div className="pt-1">
-              <button
-                type="submit"
-                disabled={loading || !newPassword}
-                className="rounded-[8px] bg-black px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800 disabled:opacity-40 transition shadow-xs"
-              >
-                Update Password
-              </button>
-            </div>
-          </form>
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    disabled={loading || !newPassword}
+                    className="rounded-[8px] bg-black px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800 disabled:opacity-40 transition shadow-xs"
+                  >
+                    {hasPasswordSet ? 'Update Password' : 'Save Password'}
+                  </button>
+                </div>
+              </form>
+            );
+          })()}
 
           {/* Two-Factor Authentication (2FA) */}
           <div className="py-6 border-t border-zinc-200 space-y-4">

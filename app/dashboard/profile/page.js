@@ -7,7 +7,12 @@ import { APP_DOMAIN } from '../../../lib/constants';
 import { compressAvatarImage } from '../../../lib/imageUtils';
 import { setQuestFlag } from '../../../lib/questFlags';
 
-const SOCIALS = ['instagram', 'youtube', 'tiktok', 'facebook', 'twitter', 'linkedin', 'spotify', 'telegram', 'whatsapp'];
+const SOCIALS = [
+  'snapchat', 'instagram', 'tiktok', 'youtube', 'twitter', 'whatsapp',
+  'threads', 'facebook', 'pinterest', 'reddit', 'linkedin', 'telegram',
+  'discord', 'spotify', 'applemusic', 'soundcloud', 'twitch', 'kick',
+  'patreon', 'substack', 'medium', 'github', 'paypal', 'cashapp', 'venmo', 'phone'
+];
 
 function randomToken() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -216,6 +221,7 @@ function ShareCard({ username }) {
   const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${username}` : `/${username}`;
   // ecc=H = 30% error correction — required when overlaying a logo on QR code
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&ecc=H&data=${encodeURIComponent(pageUrl)}`;
+  const [isDownloading, setIsDownloading] = useState(false);
 
   function copyLink() {
     navigator.clipboard.writeText(pageUrl).then(() => {
@@ -225,53 +231,133 @@ function ShareCard({ username }) {
     });
   }
 
-  function downloadQrWithBadge() {
-    setQuestFlag('shared_page');
-    const canvas = document.createElement('canvas');
-    const size = 600;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-
-      // Badge must be small — ecc=H recovers up to 30% damage, keep badge under 10%
-      const badgeSize = 72;
-      const badgeX = (size - badgeSize) / 2;
-      const badgeY = (size - badgeSize) / 2;
-      const radius = 14;
-
-      ctx.fillStyle = '#000000';
+  function drawSafeRoundRect(ctx, x, y, width, height, radius) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
       ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
-      ctx.fill();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+  }
 
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 5;
-      ctx.stroke();
+  async function saveBlobFile(blob, filename) {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      } catch (err) {
+        if (err.name === 'AbortError') return true;
+      }
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    }, 1000);
+    return true;
+  }
 
-      const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${badgeSize}" height="${badgeSize}"><path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
-      const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml;charset=utf-8' });
-      const svgUrl = URL.createObjectURL(svgBlob);
-      const logoImg = new Image();
-      logoImg.onload = () => {
-        const padding = 12;
-        ctx.drawImage(logoImg, badgeX + padding, badgeY + padding, badgeSize - padding * 2, badgeSize - padding * 2);
-        URL.revokeObjectURL(svgUrl);
+  async function downloadQrWithBadge() {
+    setQuestFlag('shared_page');
+    setIsDownloading(true);
+    const filename = `${username}-qr-code.png`;
+    const highResQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&ecc=H&data=${encodeURIComponent(pageUrl)}`;
 
-        const link = document.createElement('a');
-        link.download = `${username}-qr-code.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      };
-      logoImg.src = svgUrl;
-    };
-    // Use ecc=H (High) for the download too — required for logo overlay
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&ecc=H&data=${encodeURIComponent(pageUrl)}`;
+    try {
+      await new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const size = 600;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+          try {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, size, size);
+            ctx.drawImage(img, 0, 0, size, size);
+
+            const badgeSize = 72;
+            const badgeX = (size - badgeSize) / 2;
+            const badgeY = (size - badgeSize) / 2;
+            const radius = 14;
+
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            drawSafeRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, radius);
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${badgeSize}" height="${badgeSize}"><path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+            const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            const logoImg = new Image();
+
+            logoImg.onload = async () => {
+              const padding = 12;
+              ctx.drawImage(logoImg, badgeX + padding, badgeY + padding, badgeSize - padding * 2, badgeSize - padding * 2);
+              URL.revokeObjectURL(svgUrl);
+
+              if (canvas.toBlob) {
+                canvas.toBlob(async (blob) => {
+                  if (blob) {
+                    await saveBlobFile(blob, filename);
+                    resolve();
+                  } else {
+                    reject(new Error('Canvas blob generation failed'));
+                  }
+                }, 'image/png');
+              } else {
+                const dataUrl = canvas.toDataURL('image/png');
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                await saveBlobFile(blob, filename);
+                resolve();
+              }
+            };
+            logoImg.onerror = () => reject(new Error('Logo image loading failed'));
+            logoImg.src = svgUrl;
+          } catch (canvasErr) {
+            reject(canvasErr);
+          }
+        };
+
+        img.onerror = () => reject(new Error('External QR image loading failed'));
+        img.src = highResQrUrl;
+      });
+    } catch (err) {
+      console.warn('Canvas QR download failed, trying direct blob download:', err);
+      try {
+        const resp = await fetch(highResQrUrl);
+        const blob = await resp.blob();
+        await saveBlobFile(blob, filename);
+      } catch (fallbackErr) {
+        console.error('All QR download methods failed:', fallbackErr);
+        window.open(highResQrUrl, '_blank');
+      }
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   return (
@@ -305,10 +391,11 @@ function ShareCard({ username }) {
           <button
             type="button"
             onClick={downloadQrWithBadge}
-            className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-black px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800"
+            disabled={isDownloading}
+            className="flex items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-black px-4 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50"
           >
-            <Download size={13} />
-            Download QR
+            {isDownloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+            {isDownloading ? 'Saving QR...' : 'Download QR'}
           </button>
         </div>
       </div>
@@ -593,20 +680,46 @@ export default function ProfilePage() {
       </div>
 
       <div className="py-6 border-t border-zinc-200">
-        <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Social links</h2>
+        <h2 className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-500">Social links</h2>
+        <p className="mb-4 text-xs text-zinc-400">Add links or usernames to display on your public profile. For WhatsApp, enter your international phone number or link.</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {SOCIALS.map((name) => (
-            <label key={name} className={`${labelClass} capitalize`}>
-              {name}
-              <input
-                type="url"
-                value={(profile.socials || {})[name] || ''}
-                onChange={(e) => updateSocial(name, e.target.value)}
-                placeholder={`https://${name}.com/...`}
-                className={inputClass}
-              />
-            </label>
-          ))}
+          {SOCIALS.map((name) => {
+            const isWhatsApp = name === 'whatsapp';
+            const isPhone = name === 'phone';
+            const isEmail = name === 'email';
+            const isSnap = name === 'snapchat';
+
+            let placeholder = `https://${name}.com/...`;
+            let inputType = 'text';
+
+            if (isWhatsApp) {
+              placeholder = '+1 555 123 4567 or wa.me/...';
+            } else if (isPhone) {
+              placeholder = '+1 555 123 4567';
+              inputType = 'tel';
+            } else if (isEmail) {
+              placeholder = 'creator@example.com';
+              inputType = 'email';
+            } else if (isSnap) {
+              placeholder = 'https://snapchat.com/add/...';
+            }
+
+            return (
+              <label key={name} className={`${labelClass} capitalize`}>
+                <div className="flex items-center justify-between">
+                  <span>{name === 'applemusic' ? 'Apple Music' : name === 'cashapp' ? 'Cash App' : name}</span>
+                  {isWhatsApp && <span className="text-[10px] text-zinc-400 lowercase font-normal">phone or link</span>}
+                </div>
+                <input
+                  type={inputType}
+                  value={(profile.socials || {})[name] || ''}
+                  onChange={(e) => updateSocial(name, e.target.value)}
+                  placeholder={placeholder}
+                  className={inputClass}
+                />
+              </label>
+            );
+          })}
         </div>
       </div>
 

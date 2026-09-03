@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ICONS } from '../../lib/icons';
 import { logPageView, logLinkClick } from '../../lib/analytics';
-import { safeHref, safeColor, isWithinSchedule, resolvePageTextColor } from '../../lib/publicProfileUtils';
+import { safeHref, formatSocialHref, safeColor, isWithinSchedule, resolvePageTextColor } from '../../lib/publicProfileUtils';
 import BackgroundEffects from './BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
@@ -533,56 +533,138 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
     }
   }
 
-  function downloadQrWithBadge() {
-    const canvas = document.createElement('canvas');
-    const size = 600;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      // Background and QR code
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 24, 24, size - 48, size - 48);
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
-      // Centered dark badge with rounded corners
-      const badgeSize = 130;
-      const badgeX = (size - badgeSize) / 2;
-      const badgeY = (size - badgeSize) / 2;
-      const radius = 28;
-
-      ctx.fillStyle = '#000000';
+  function drawSafeRoundRect(ctx, x, y, width, height, radius) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
       ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize, radius);
-      ctx.fill();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+  }
 
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 10;
-      ctx.stroke();
+  async function saveBlobFile(blob, filename) {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      } catch (err) {
+        if (err.name === 'AbortError') return true;
+      }
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    }, 1000);
+    return true;
+  }
 
-      // Draw interlocking link chains
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 11;
-      ctx.lineCap = 'round';
+  async function downloadQrWithBadge() {
+    setIsDownloadingQr(true);
+    const filename = `${profile?.username || 'link-in-bio'}-qr.png`;
+    const highResQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&ecc=H&data=${encodeURIComponent(pageUrl)}`;
 
-      // Left link loop
-      ctx.beginPath();
-      ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
-      ctx.stroke();
+    try {
+      await new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const size = 600;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
 
-      // Right link loop
-      ctx.beginPath();
-      ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
-      ctx.stroke();
+        img.onload = () => {
+          try {
+            // Background and QR code
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, size, size);
+            ctx.drawImage(img, 24, 24, size - 48, size - 48);
 
-      const link = document.createElement('a');
-      link.download = `${profile?.username || 'link-in-bio'}-qr.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    };
-    img.src = qrUrl;
+            // Centered dark badge with rounded corners
+            const badgeSize = 130;
+            const badgeX = (size - badgeSize) / 2;
+            const badgeY = (size - badgeSize) / 2;
+            const radius = 28;
+
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            drawSafeRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, radius);
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Draw interlocking link chains
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 11;
+            ctx.lineCap = 'round';
+
+            // Left link loop
+            ctx.beginPath();
+            ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
+            ctx.stroke();
+
+            // Right link loop
+            ctx.beginPath();
+            ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
+            ctx.stroke();
+
+            if (canvas.toBlob) {
+              canvas.toBlob(async (blob) => {
+                if (blob) {
+                  await saveBlobFile(blob, filename);
+                  resolve();
+                } else {
+                  reject(new Error('toBlob failed'));
+                }
+              }, 'image/png');
+            } else {
+              const dataUrl = canvas.toDataURL('image/png');
+              fetch(dataUrl).then((r) => r.blob()).then(async (b) => {
+                await saveBlobFile(b, filename);
+                resolve();
+              }).catch(reject);
+            }
+          } catch (canvasErr) {
+            reject(canvasErr);
+          }
+        };
+
+        img.onerror = () => reject(new Error('QR Image load error'));
+        img.src = highResQrUrl;
+      });
+    } catch (err) {
+      console.warn('Canvas export failed, falling back to direct QR blob:', err);
+      try {
+        const resp = await fetch(highResQrUrl);
+        const blob = await resp.blob();
+        await saveBlobFile(blob, filename);
+      } catch (fallbackErr) {
+        console.error('Direct blob download failed:', fallbackErr);
+        window.open(highResQrUrl, '_blank');
+      }
+    } finally {
+      setIsDownloadingQr(false);
+    }
   }
 
   function handleShareChannel(type) {
@@ -648,10 +730,11 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
                 <button
                   type="button"
                   onClick={downloadQrWithBadge}
-                  className="flex items-center gap-1.5 rounded-full bg-black px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95"
+                  disabled={isDownloadingQr}
+                  className="flex items-center gap-1.5 rounded-full bg-black px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60"
                 >
                   <Download size={13} />
-                  <span>Save QR image</span>
+                  <span>{isDownloadingQr ? 'Saving QR...' : 'Save QR image'}</span>
                 </button>
                 <button
                   type="button"
@@ -1354,132 +1437,134 @@ export default function PublicProfile({ profile, blocks }) {
         )}
 
         {/* Content Viewport */}
-        <div className="relative z-10 w-full flex flex-col items-center">
-          {/* Top Header Bar */}
-          <div className="flex w-full items-center justify-between mb-8 px-1">
-            <button
-              onClick={() => setClaimOpen(true)}
-              className="flex items-center transition hover:opacity-80 active:scale-95"
-              style={{ color: text }}
-              title="Create your Link-in-Bio"
-            >
-              <BrandLogo size="sm" variant="text" theme="current" />
-            </button>
-
-            <div className="flex items-center gap-2">
+        <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-between min-h-[inherit]">
+          <div className="w-full flex flex-col items-center">
+            {/* Top Header Bar */}
+            <div className="flex w-full items-center justify-between mb-8 px-1">
               <button
-                onClick={() => setShareOpen(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/20 backdrop-blur-md transition hover:scale-110 shadow-sm"
+                onClick={() => setClaimOpen(true)}
+                className="flex items-center transition hover:opacity-80 active:scale-95"
                 style={{ color: text }}
-                title="Share profile"
+                title="Create your Link-in-Bio"
               >
-                <Share2 size={14} />
+                <BrandLogo size="sm" variant="text" theme="current" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShareOpen(true)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/20 backdrop-blur-md transition hover:scale-110 shadow-sm"
+                  style={{ color: text }}
+                  title="Share profile"
+                >
+                  <Share2 size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Profile Avatar */}
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.display_name || profile.username}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="mb-4 h-24 w-24 rounded-full border-[3px] border-current/20 object-cover shadow-2xl animate-profile-in"
+              />
+            ) : (
+              <div
+                className="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-[3px] border-current/20 bg-current/10 text-2xl font-black shadow-2xl animate-profile-in"
+                style={{ color: text }}
+              >
+                {(profile?.display_name || profile?.username || '?').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+
+            {/* Identity & Verified Badge */}
+            <div className="flex items-center gap-1.5 animate-profile-in">
+              <h1
+                className="text-center text-2xl font-black tracking-tight sm:text-3xl"
+                style={{ color: text }}
+              >
+                @{profile?.username || 'username'}
+              </h1>
+              {profile?.is_verified && (
+                <ShieldCheck size={20} style={{ color: text }} className="shrink-0" title="Verified Creator" />
+              )}
+            </div>
+
+            {profile?.display_name && profile.display_name !== profile.username && (
+              <p className="animate-profile-in mt-0.5 text-sm font-semibold opacity-75" style={{ color: text }}>
+                {profile.display_name}
+              </p>
+            )}
+
+            {profile?.bio && (
+              <p
+                className="animate-profile-in mt-3 max-w-[420px] text-center text-xs sm:text-sm leading-relaxed opacity-85 font-medium"
+                style={{ color: text }}
+              >
+                {profile.bio}
+              </p>
+            )}
+
+            {/* Persistent Social Media Icons (Linktree style circular buttons) */}
+            {profile?.socials && typeof profile.socials === 'object' && (
+              <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
+                {Object.entries(profile.socials)
+                  .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
+                  .map(([name, url]) => {
+                    const icon = ICONS[name] || ICONS.link;
+                    return (
+                      <a
+                        key={name}
+                        href={formatSocialHref(name, url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
+                        aria-label={icon.label || name}
+                        title={icon.label || name}
+                      >
+                        <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
+                      </a>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Blocks */}
+            <nav className="mt-7 flex w-full flex-col gap-3">
+              {visibleBlocks.map((block, index) => {
+                const Renderer = RENDERERS[block.type];
+                if (!Renderer) return null;
+                return (
+                  <Renderer
+                    key={block.id}
+                    data={block.data || {}}
+                    profile={profile}
+                    index={index}
+                    blockId={block.id}
+                    onOpenShareLink={(data) => setActiveShareLink(data)}
+                  />
+                );
+              })}
+            </nav>
+
+            {/* Viral Conversion Join Button */}
+            <div className="mt-10 flex w-full justify-center">
+              <button
+                onClick={() => setClaimOpen(true)}
+                className="flex items-center gap-1.5 rounded-full border border-current/15 bg-white/90 px-6 py-2.5 text-xs font-black text-black shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"
+              >
+                <span>Join {profile?.display_name || `@${profile?.username || 'creator'}`} on</span>
+                <BrandLogo size="xs" variant="text" theme="current" />
               </button>
             </div>
           </div>
 
-          {/* Profile Avatar */}
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name || profile.username}
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              className="mb-4 h-24 w-24 rounded-full border-[3px] border-current/20 object-cover shadow-2xl animate-profile-in"
-            />
-          ) : (
-            <div
-              className="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-[3px] border-current/20 bg-current/10 text-2xl font-black shadow-2xl animate-profile-in"
-              style={{ color: text }}
-            >
-              {(profile?.display_name || profile?.username || '?').slice(0, 2).toUpperCase()}
-            </div>
-          )}
-
-          {/* Identity & Verified Badge */}
-          <div className="flex items-center gap-1.5 animate-profile-in">
-            <h1
-              className="text-center text-2xl font-black tracking-tight sm:text-3xl"
-              style={{ color: text }}
-            >
-              @{profile?.username || 'username'}
-            </h1>
-            {profile?.is_verified && (
-              <ShieldCheck size={20} style={{ color: text }} className="shrink-0" title="Verified Creator" />
-            )}
-          </div>
-
-          {profile?.display_name && profile.display_name !== profile.username && (
-            <p className="animate-profile-in mt-0.5 text-sm font-semibold opacity-75" style={{ color: text }}>
-              {profile.display_name}
-            </p>
-          )}
-
-          {profile?.bio && (
-            <p
-              className="animate-profile-in mt-3 max-w-[420px] text-center text-xs sm:text-sm leading-relaxed opacity-85 font-medium"
-              style={{ color: text }}
-            >
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-          {profile?.socials && typeof profile.socials === 'object' && (
-            <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
-              {Object.entries(profile.socials)
-                .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
-                .map(([name, url]) => {
-                  const icon = ICONS[name] || ICONS.link;
-                  return (
-                    <a
-                      key={name}
-                      href={safeHref(url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
-                      aria-label={icon.label || name}
-                      title={icon.label || name}
-                    >
-                      <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
-                    </a>
-                  );
-                })}
-            </div>
-          )}
-
-          {/* Blocks */}
-          <nav className="mt-7 flex w-full flex-col gap-3">
-            {visibleBlocks.map((block, index) => {
-              const Renderer = RENDERERS[block.type];
-              if (!Renderer) return null;
-              return (
-                <Renderer
-                  key={block.id}
-                  data={block.data || {}}
-                  profile={profile}
-                  index={index}
-                  blockId={block.id}
-                  onOpenShareLink={(data) => setActiveShareLink(data)}
-                />
-              );
-            })}
-          </nav>
-
-          {/* Viral Conversion Join Button */}
-          <div className="mt-10 flex w-full justify-center">
-            <button
-              onClick={() => setClaimOpen(true)}
-              className="flex items-center gap-1.5 rounded-full border border-current/15 bg-white/90 px-6 py-2.5 text-xs font-black text-black shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"
-            >
-              <span>Join {profile?.display_name || `@${profile?.username || 'creator'}`} on</span>
-              <BrandLogo size="xs" variant="text" theme="current" />
-            </button>
-          </div>
-
-          {/* Footer Legal & Modal Links */}
-          <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] opacity-60 font-medium">
+          {/* Footer Legal & Modal Links - Lowered to bottom */}
+          <footer className="mt-auto pt-14 pb-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] opacity-60 font-medium">
             <button onClick={() => handleOpenSpecificReport('Account profile')} className="hover:underline">
               Report
             </button>
