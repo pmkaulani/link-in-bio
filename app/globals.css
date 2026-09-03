@@ -14,14 +14,6 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Fix mobile input auto-zoom on Android & iOS */
-@media screen and (max-width: 768px) {
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
 
 /* Touch responsiveness */
 * {

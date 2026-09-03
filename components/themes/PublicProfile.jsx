@@ -512,6 +512,7 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [pageUrl, setPageUrl] = useState('');
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -532,8 +533,6 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
       setTimeout(() => setCopied(false), 2200);
     }
   }
-
-  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
   function drawSafeRoundRect(ctx, x, y, width, height, radius) {
     if (typeof ctx.roundRect === 'function') {
