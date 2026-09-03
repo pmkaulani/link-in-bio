@@ -1426,9 +1426,9 @@ export default function PublicProfile({ profile, blocks }) {
       {customFontUrl && (
         <link rel="stylesheet" href={customFontUrl} />
       )}
-      <div className="min-h-[100dvh] w-full bg-[#18181B] flex flex-col items-center justify-center p-0 sm:py-6 sm:px-4">
+      <div className="min-h-[100dvh] w-full bg-[#18181B] flex flex-col items-center justify-start p-0 sm:py-8 sm:px-4 overflow-y-auto">
         <main
-          className="link-page relative w-full sm:max-w-[580px] min-h-[100dvh] sm:min-h-0 sm:my-auto sm:rounded-[36px] overflow-hidden px-5 pt-6 pb-4 sm:px-8 sm:pt-8 sm:pb-6 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
+          className="link-page relative w-full sm:max-w-[580px] min-h-[100dvh] sm:min-h-0 sm:my-auto sm:rounded-[36px] px-5 pt-6 pb-8 sm:px-8 sm:pt-8 sm:pb-8 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
           style={{
             ...getBackground(profile || {}),
             color: text,
@@ -1436,24 +1436,27 @@ export default function PublicProfile({ profile, blocks }) {
           }}
           onMouseMove={profile?.cursor_glow !== 'none' ? handleMove : undefined}
         >
-        <BackgroundEffects effect={profile?.bg_effect || 'none'} primary={primary} />
+          {/* Background effects clipped to card border */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden sm:rounded-[36px]">
+            <BackgroundEffects effect={profile?.bg_effect || 'none'} primary={primary} />
 
-        {profile?.cursor_glow !== 'none' && (
-          <div
-            className="pointer-events-none absolute inset-0 opacity-80 transition-all duration-700 ease-out"
-            style={{
-              background:
-                profile?.cursor_glow === 'subtle'
-                  ? `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, ${primary}25 0%, transparent 22%)`
-                  : profile?.cursor_glow === 'white'
-                  ? `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, rgba(255,255,255,0.2) 0%, transparent 25%)`
-                  : `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, ${primary}55 0%, transparent 28%)`,
-            }}
-          />
-        )}
+            {profile?.cursor_glow !== 'none' && (
+              <div
+                className="absolute inset-0 opacity-80 transition-all duration-700 ease-out"
+                style={{
+                  background:
+                    profile?.cursor_glow === 'subtle'
+                      ? `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, ${primary}25 0%, transparent 22%)`
+                      : profile?.cursor_glow === 'white'
+                      ? `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, rgba(255,255,255,0.2) 0%, transparent 25%)`
+                      : `radial-gradient(circle at ${cursor.x}% ${cursor.y}%, ${primary}55 0%, transparent 28%)`,
+                }}
+              />
+            )}
+          </div>
 
-        {/* Content Viewport */}
-        <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-between min-h-[inherit]">
+          {/* Content Viewport */}
+          <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-between min-h-full">
           <div className="w-full flex flex-col items-center">
             {/* Top Header Bar */}
             <div className="flex w-full items-center justify-between mb-8 px-1">
@@ -1569,7 +1572,7 @@ export default function PublicProfile({ profile, blocks }) {
           </div>
 
           {/* Bottom Actions & Legal Footer - Anchored at bottom of page */}
-          <div className="mt-auto pt-6 pb-1 w-full flex flex-col items-center gap-3 shrink-0">
+          <div className="mt-auto pt-6 pb-2 w-full flex flex-col items-center gap-3.5 shrink-0">
             {/* Viral Conversion Join Button */}
             <button
               onClick={() => setClaimOpen(true)}
@@ -1580,7 +1583,7 @@ export default function PublicProfile({ profile, blocks }) {
             </button>
 
             {/* Footer Legal & Modal Links */}
-            <footer className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] opacity-60 font-medium">
+            <footer className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs opacity-75 font-semibold">
               <button onClick={() => handleOpenSpecificReport('Account profile')} className="hover:underline">
                 Report
               </button>
@@ -1593,7 +1596,7 @@ export default function PublicProfile({ profile, blocks }) {
                 Terms
               </Link>
               <span>•</span>
-              <button onClick={() => setAboutOpen(true)} className="hover:underline font-semibold">
+              <button onClick={() => setAboutOpen(true)} className="hover:underline font-bold">
                 About this account
               </button>
             </footer>

@@ -484,17 +484,28 @@ export default function LivePreview({ profile, blocks }) {
             </div>
 
             {/* Join Pill */}
-            <div className="mt-6 flex w-full justify-center">
+            <div className="mt-5 flex w-full justify-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-current/15 bg-white/90 px-3.5 py-1 text-[10px] font-bold text-black shadow-md backdrop-blur">
-                <span>Join @{profile?.username || 'you'} on</span>
+                <span>Join {profile?.display_name || `@${profile?.username || 'you'}`} on</span>
                 <BrandLogo size="xs" variant="text" theme="current" />
               </span>
             </div>
 
+            {/* Footer Legal Links */}
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-[9px] opacity-60 font-semibold" style={{ color: text }}>
+              <span>Report</span>
+              <span>•</span>
+              <span>Privacy</span>
+              <span>•</span>
+              <span>Terms</span>
+              <span>•</span>
+              <span>About</span>
+            </div>
+
             {/* Home indicator */}
-            <div className="mt-6 flex flex-col items-center">
+            <div className="mt-4 flex flex-col items-center">
               <p className="text-[9px] opacity-40">Made with LinkInBio</p>
-              <div className="mt-2.5 h-1 w-20 rounded-full bg-current/20" />
+              <div className="mt-2 h-1 w-16 rounded-full bg-current/20" />
             </div>
           </div>
         </div>
