@@ -10,6 +10,7 @@ import { HelpCircle, Sparkles, Check, ChevronDown } from 'lucide-react';
 
 function CountryCodeDropdown({ countryCode, onSelect }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const ref = useRef(null);
 
   useEffect(() => {
@@ -22,41 +23,60 @@ function CountryCodeDropdown({ countryCode, onSelect }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  const filtered = COUNTRY_CODES.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return c.code.toLowerCase().includes(q) || c.country.toLowerCase().includes(q);
+  });
+
   return (
     <div className="relative shrink-0" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex h-full items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 text-xs font-bold text-black hover:border-black shadow-xs transition"
+        className="flex h-full items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-bold text-black hover:border-black shadow-xs transition"
       >
         <span>{countryCode}</span>
         <ChevronDown size={12} className={`text-zinc-400 transition-transform ${open ? 'rotate-180 text-black' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 w-56 max-h-56 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl animate-fadeIn">
-          {COUNTRY_CODES.map((c) => {
-            const isSelected = c.code === countryCode;
-            return (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => {
-                  onSelect(c.code);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
-                  isSelected ? 'bg-zinc-100 font-bold text-black' : 'text-zinc-700 hover:bg-zinc-50 hover:text-black font-medium'
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono font-bold text-black">{c.code}</span>
-                  <span className="text-zinc-500 text-[11px] truncate">{c.country}</span>
-                </div>
-                {isSelected && <Check size={12} className="text-black shrink-0" />}
-              </button>
-            );
-          })}
+        <div className="absolute left-0 top-full mt-1.5 z-50 w-64 max-h-60 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-2xl animate-fadeIn flex flex-col">
+          <div className="p-1 border-b border-zinc-100 mb-1">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search country or code..."
+              autoFocus
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:bg-white focus:outline-none"
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 max-h-44 space-y-0.5">
+            {filtered.map((c) => {
+              const isSelected = c.code === countryCode;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => {
+                    onSelect(c.code);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
+                    isSelected ? 'bg-zinc-100 font-bold text-black' : 'text-zinc-700 hover:bg-zinc-50 hover:text-black font-medium'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-black w-10 shrink-0">{c.code}</span>
+                    <span className="text-zinc-600 text-[11px] truncate">{c.country}</span>
+                  </div>
+                  {isSelected && <Check size={12} className="text-black shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
