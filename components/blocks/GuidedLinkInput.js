@@ -350,7 +350,8 @@ export default function GuidedLinkInput({
           ) : (
             <div>
               <input
-                type="url"
+                type="text"
+                inputMode="url"
                 value={usernameVal}
                 onChange={(e) => handleYoutubeChange(e.target.value, 'video')}
                 placeholder="https://youtube.com/watch?v=... or youtu.be/..."
@@ -388,7 +389,8 @@ export default function GuidedLinkInput({
               : 'Destination Link'}
           </label>
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={url}
             onChange={(e) => handleUrlChange(e.target.value)}
             placeholder={platConfig.placeholder || 'https://...'}

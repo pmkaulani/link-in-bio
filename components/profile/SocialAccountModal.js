@@ -225,13 +225,18 @@ export default function SocialAccountModal({
     let clean = username.trim();
     let finalUrl = '';
 
-    if (platConfig.mode === 'username') {
+    if (platConfig.prefix) {
       clean = cleanUsername(clean);
-      finalUrl = platConfig.buildUrl ? platConfig.buildUrl(clean) : `https://${platConfig.prefix}${clean}`;
-    } else if (platConfig.mode === 'phone') {
+    }
+
+    if (platConfig.mode === 'phone') {
       finalUrl = platConfig.buildUrl ? platConfig.buildUrl(clean, countryCode) : clean;
+    } else if (platConfig.buildUrl) {
+      finalUrl = platConfig.buildUrl(clean);
+    } else if (platConfig.prefix) {
+      finalUrl = `https://${platConfig.prefix}${clean}`;
     } else {
-      finalUrl = platConfig.buildUrl ? platConfig.buildUrl(clean) : clean;
+      finalUrl = ensureHttps(clean);
     }
 
     const accountData = {
@@ -242,6 +247,7 @@ export default function SocialAccountModal({
       display_name: displayName.trim(),
       url: finalUrl,
       is_primary: isPrimary || existingCountForPlatform === 0,
+      is_visible: accountToEdit?.is_visible !== false,
       order: accountToEdit?.order ?? existingAccounts.length,
     };
 
@@ -350,7 +356,7 @@ export default function SocialAccountModal({
 
         {/* STEP 2: Configure Account Details */}
         {step === 2 && (
-          <form onSubmit={handleSaveSubmit} className="p-6 flex-1 overflow-y-auto space-y-4">
+          <form onSubmit={handleSaveSubmit} noValidate className="p-6 flex-1 overflow-y-auto space-y-4">
             {/* Platform Identifier Banner */}
             <div className="flex items-center justify-between rounded-xl bg-zinc-50 border border-zinc-200/80 px-3.5 py-2.5">
               <div className="flex items-center gap-2.5">
@@ -395,17 +401,17 @@ export default function SocialAccountModal({
                 className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none shadow-xs"
               />
 
-              {/* Quick suggestion chips */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              {/* Quick Label Chips */}
+              <div className="flex flex-wrap gap-1.5 mt-2">
                 {LABEL_SUGGESTIONS.map((sug) => (
                   <button
                     key={sug}
                     type="button"
-                    onClick={() => setLabel(sug)}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border transition ${
+                    onClick={() => setLabel(label === sug ? '' : sug)}
+                    className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition ${
                       label === sug
                         ? 'border-black bg-black text-white'
-                        : 'border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-400 hover:text-black'
+                        : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400'
                     }`}
                   >
                     {sug}
@@ -420,7 +426,7 @@ export default function SocialAccountModal({
                 {platConfig.label} Handle or Number
               </label>
 
-              {platConfig.mode === 'username' ? (
+              {platConfig.prefix ? (
                 <div className="flex rounded-[8px] border border-zinc-200 bg-white shadow-xs overflow-hidden focus-within:border-black focus-within:ring-1 focus-within:ring-black">
                   <span className="flex items-center bg-zinc-100/90 px-3 text-xs font-medium text-zinc-500 border-r border-zinc-200 select-none shrink-0">
                     {platConfig.prefix}
@@ -456,7 +462,8 @@ export default function SocialAccountModal({
               ) : (
                 <div className="flex rounded-[8px] border border-zinc-200 bg-white shadow-xs overflow-hidden focus-within:border-black focus-within:ring-1 focus-within:ring-black">
                   <input
-                    type={platConfig.mode === 'email' ? 'email' : 'url'}
+                    type="text"
+                    inputMode={platConfig.mode === 'email' ? 'email' : 'url'}
                     value={username}
                     onChange={(e) => handleUsernameChange(e.target.value)}
                     placeholder={platConfig.placeholder || 'https://...'}
@@ -539,7 +546,9 @@ export default function SocialAccountModal({
                       )}
                     </div>
                     <span className="block text-[11px] font-medium text-zinc-500 truncate">
-                      {displayName ? `${displayName} (@${username || 'handle'})` : `@${username || 'handle'}`}
+                      {displayName
+                        ? `${displayName} (@${(username || 'handle').trim().replace(/^@+/, '')})`
+                        : `@${(username || 'handle').trim().replace(/^@+/, '')}`}
                     </span>
                   </div>
                 </div>
