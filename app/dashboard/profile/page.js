@@ -6,13 +6,7 @@ import { Copy, Check, Download, Globe, AlertTriangle, Loader2, RefreshCw, Link2,
 import { APP_DOMAIN } from '../../../lib/constants';
 import { compressAvatarImage } from '../../../lib/imageUtils';
 import { setQuestFlag } from '../../../lib/questFlags';
-
-const SOCIALS = [
-  'snapchat', 'instagram', 'tiktok', 'youtube', 'twitter', 'whatsapp',
-  'threads', 'facebook', 'pinterest', 'reddit', 'linkedin', 'telegram',
-  'discord', 'spotify', 'applemusic', 'soundcloud', 'twitch', 'kick',
-  'patreon', 'substack', 'medium', 'github', 'paypal', 'cashapp', 'venmo', 'phone'
-];
+import SocialLinksManager from '../../../components/profile/SocialLinksManager';
 
 function randomToken() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -516,10 +510,6 @@ export default function ProfilePage() {
     }
   }
 
-  function updateSocial(name, value) {
-    updateProfile({ socials: { ...(profile.socials || {}), [name]: value } });
-  }
-
   const inputClass = 'mt-1.5 w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none';
   const labelClass = 'block text-[11px] font-bold uppercase tracking-wider text-zinc-500';
 
@@ -696,49 +686,8 @@ export default function ProfilePage() {
         </label>
       </div>
 
-      <div className="py-6 border-t border-zinc-200">
-        <h2 className="mb-1 text-xs font-bold uppercase tracking-wider text-zinc-500">Social links</h2>
-        <p className="mb-4 text-xs text-zinc-400">Add links or usernames to display on your public profile. For WhatsApp, enter your international phone number or link.</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {SOCIALS.map((name) => {
-            const isWhatsApp = name === 'whatsapp';
-            const isPhone = name === 'phone';
-            const isEmail = name === 'email';
-            const isSnap = name === 'snapchat';
-
-            let placeholder = `https://${name}.com/...`;
-            let inputType = 'text';
-
-            if (isWhatsApp) {
-              placeholder = '+1 555 123 4567 or wa.me/...';
-            } else if (isPhone) {
-              placeholder = '+1 555 123 4567';
-              inputType = 'tel';
-            } else if (isEmail) {
-              placeholder = 'creator@example.com';
-              inputType = 'email';
-            } else if (isSnap) {
-              placeholder = 'https://snapchat.com/add/...';
-            }
-
-            return (
-              <label key={name} className={`${labelClass} capitalize`}>
-                <div className="flex items-center justify-between">
-                  <span>{name === 'applemusic' ? 'Apple Music' : name === 'cashapp' ? 'Cash App' : name}</span>
-                  {isWhatsApp && <span className="text-[10px] text-zinc-400 lowercase font-normal">phone or link</span>}
-                </div>
-                <input
-                  type={inputType}
-                  value={(profile.socials || {})[name] || ''}
-                  onChange={(e) => updateSocial(name, e.target.value)}
-                  placeholder={placeholder}
-                  className={inputClass}
-                />
-              </label>
-            );
-          })}
-        </div>
-      </div>
+      {/* Social Links Section - Active-only with guided input */}
+      <SocialLinksManager profile={profile} updateProfile={updateProfile} />
 
       {/* Custom Domain Settings Card */}
       <CustomDomainCard profile={profile} userId={userId || profile?.id} />

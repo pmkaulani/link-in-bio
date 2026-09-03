@@ -89,6 +89,28 @@ test('Intelligent Platform Guide: URL Auto-Detection', async (t) => {
     assert.equal(tel.platformKey, 'phone');
   });
 
+  await t.test('detects Facebook, PayPal, Cash App, and Venmo', () => {
+    const fb = detectPlatformFromUrl('https://facebook.com/zuck');
+    assert.ok(fb);
+    assert.equal(fb.platformKey, 'facebook');
+    assert.equal(fb.value, 'zuck');
+
+    const pp = detectPlatformFromUrl('https://paypal.me/creator');
+    assert.ok(pp);
+    assert.equal(pp.platformKey, 'paypal');
+    assert.equal(pp.value, 'creator');
+
+    const ca = detectPlatformFromUrl('https://cash.app/$cashtag');
+    assert.ok(ca);
+    assert.equal(ca.platformKey, 'cashapp');
+    assert.equal(ca.value, 'cashtag');
+
+    const vm = detectPlatformFromUrl('https://venmo.com/u/creatorhandle');
+    assert.ok(vm);
+    assert.equal(vm.platformKey, 'venmo');
+    assert.equal(vm.value, 'creatorhandle');
+  });
+
   await t.test('falls back gracefully to website for generic domains', () => {
     const site = detectPlatformFromUrl('portfolio.design/my-work');
     assert.ok(site);
