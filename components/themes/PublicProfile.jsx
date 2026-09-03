@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ICONS } from '../../lib/icons';
@@ -33,8 +33,10 @@ import {
   Share2,
   Globe,
   Play,
+  ExternalLink,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../lib/constants';
+import { normalizeSocialAccounts, groupAccountsByPlatform } from '../../lib/socialAccounts';
 
 const FONT_MAP = {
   inter: "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -1367,6 +1369,10 @@ export default function PublicProfile({ profile, blocks }) {
   const [reportTarget, setReportTarget] = useState('');
   const [reportTargetBlockId, setReportTargetBlockId] = useState(null);
   const [activeShareLink, setActiveShareLink] = useState(null);
+  const [activeMultiPlatform, setActiveMultiPlatform] = useState(null);
+
+  const socialAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
+  const groupedAccounts = useMemo(() => groupAccountsByPlatform(socialAccounts), [socialAccounts]);
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
@@ -1529,26 +1535,45 @@ export default function PublicProfile({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {profile?.socials && typeof profile.socials === 'object' && (
+            {Object.keys(groupedAccounts).length > 0 && (
               <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
-                {Object.entries(profile.socials)
-                  .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
-                  .map(([name, url]) => {
-                    const icon = ICONS[name] || ICONS.link;
+                {Object.entries(groupedAccounts).map(([platform, accountList]) => {
+                  const icon = ICONS[platform] || ICONS.link;
+                  const hasMultiple = accountList.length > 1;
+                  const primaryAcc = accountList.find((a) => a.is_primary) || accountList[0];
+
+                  if (hasMultiple) {
                     return (
-                      <a
-                        key={name}
-                        href={formatSocialHref(name, url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
-                        aria-label={icon.label || name}
-                        title={icon.label || name}
+                      <button
+                        key={platform}
+                        type="button"
+                        onClick={() => setActiveMultiPlatform(platform)}
+                        className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
+                        aria-label={`${icon.label || platform} (${accountList.length} accounts)`}
+                        title={`${icon.label || platform} (${accountList.length} accounts)`}
                       >
                         <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
-                      </a>
+                        <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-white text-black text-[9px] font-black shadow-md border border-zinc-200">
+                          {accountList.length}
+                        </span>
+                      </button>
                     );
-                  })}
+                  }
+
+                  return (
+                    <a
+                      key={platform}
+                      href={formatSocialHref(platform, primaryAcc.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
+                      aria-label={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
+                      title={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
+                    >
+                      <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
+                    </a>
+                  );
+                })}
               </div>
             )}
 
@@ -1626,6 +1651,73 @@ export default function PublicProfile({ profile, blocks }) {
           onClose={() => setActiveShareLink(null)}
           onOpenReport={(target, blockId) => handleOpenSpecificReport(target, blockId)}
         />
+
+        {/* Multi-Account Selector Modal */}
+        {activeMultiPlatform && groupedAccounts[activeMultiPlatform] && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-profile-in"
+            onClick={() => setActiveMultiPlatform(null)}
+          >
+            <div
+              className="w-full max-w-sm rounded-[24px] border border-zinc-200 bg-white p-5 shadow-2xl text-black space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-black border border-zinc-200">
+                    <SocialIcon name={ICONS[activeMultiPlatform]?.className || activeMultiPlatform} className="text-[16px]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-black capitalize">
+                      {ICONS[activeMultiPlatform]?.label || activeMultiPlatform}
+                    </h3>
+                    <p className="text-[11px] text-zinc-400">Choose an account to visit</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveMultiPlatform(null)}
+                  className="rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-black transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pt-1">
+                {groupedAccounts[activeMultiPlatform].map((acc) => (
+                  <a
+                    key={acc.id}
+                    href={formatSocialHref(acc.platform, acc.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setActiveMultiPlatform(null)}
+                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 hover:border-black hover:bg-white hover:shadow-xs transition group"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-black">
+                          {acc.label || (acc.is_primary ? 'Main' : 'Account')}
+                        </span>
+                        {acc.is_primary && (
+                          <span className="rounded-full bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-bold text-amber-700">
+                            ★ Primary
+                          </span>
+                        )}
+                      </div>
+                      <span className="block text-xs font-medium text-zinc-500 truncate mt-0.5">
+                        {acc.display_name ? `${acc.display_name} (@${acc.username})` : `@${acc.username}`}
+                      </span>
+                    </div>
+
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-400 group-hover:border-black group-hover:text-black transition">
+                      <ExternalLink size={12} />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
     </>

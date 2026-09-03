@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ExternalLink,
   Share2,
@@ -17,6 +17,7 @@ import BackgroundEffects from '../themes/BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
 import { useDashboard } from '../../app/dashboard/DashboardContext';
+import { normalizeSocialAccounts, groupAccountsByPlatform } from '../../lib/socialAccounts';
 
 const FONT_MAP = {
   inter: "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -252,22 +253,27 @@ function PreviewCallout({ data, profile }) {
 }
 
 function PreviewSocialsBar({ profile }) {
-  if (!profile?.socials || typeof profile.socials !== 'object') return null;
-  const list = Object.entries(profile.socials).filter(
-    ([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim())
-  );
-  if (list.length === 0) return null;
+  const accounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
+  const grouped = useMemo(() => groupAccountsByPlatform(accounts), [accounts]);
+  if (Object.keys(grouped).length === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 my-1">
-      {list.map(([name, url]) => {
-        const icon = ICONS[name] || ICONS.link;
+      {Object.entries(grouped).map(([platform, accountList]) => {
+        const icon = ICONS[platform] || ICONS.link;
+        const hasMultiple = accountList.length > 1;
         return (
           <span
-            key={name}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 backdrop-blur-md shadow-xs"
+            key={platform}
+            className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 backdrop-blur-md shadow-xs"
+            title={`${icon.label || platform} (${accountList.length} accounts)`}
           >
             <SocialIcon name={icon.className} style={{ color: icon.color, fontSize: 14 }} />
+            {hasMultiple && (
+              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
+                {accountList.length}
+              </span>
+            )}
           </span>
         );
       })}
@@ -297,6 +303,8 @@ export default function LivePreview({ profile, blocks }) {
   const font = FONT_MAP[profile?.font_family] || FONT_MAP[profile?.font] || FONT_MAP.inter;
   const customFontUrl = GOOGLE_FONT_URLS[profile?.font_family] || GOOGLE_FONT_URLS[profile?.font];
   const visibleBlocks = (blocks || []).filter((b) => b.is_visible !== false);
+  const previewAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
+  const previewGrouped = useMemo(() => groupAccountsByPlatform(previewAccounts), [previewAccounts]);
 
   const username = profile?.username || 'creator';
   const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${username}` : `/${username}`;
@@ -432,22 +440,26 @@ export default function LivePreview({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {profile?.socials && typeof profile.socials === 'object' && (
+            {Object.keys(previewGrouped).length > 0 && (
               <div className="mt-3.5 flex flex-wrap justify-center gap-2.5">
-                {Object.entries(profile.socials)
-                  .filter(([name, url]) => Boolean(!name.startsWith('_') && typeof url === 'string' && url.trim()))
-                  .map(([name, url]) => {
-                    const icon = ICONS[name] || ICONS.link;
-                    return (
-                      <span
-                        key={name}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm border border-white/10"
-                        title={icon.label || name}
-                      >
-                        <SocialIcon name={icon.className} style={{ fontSize: 14 }} />
-                      </span>
-                    );
-                  })}
+                {Object.entries(previewGrouped).map(([platform, accountList]) => {
+                  const icon = ICONS[platform] || ICONS.link;
+                  const hasMultiple = accountList.length > 1;
+                  return (
+                    <span
+                      key={platform}
+                      className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm border border-white/10"
+                      title={`${icon.label || platform} (${accountList.length} accounts)`}
+                    >
+                      <SocialIcon name={icon.className} style={{ fontSize: 14 }} />
+                      {hasMultiple && (
+                        <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
+                          {accountList.length}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             )}
 
