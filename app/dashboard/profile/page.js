@@ -294,49 +294,66 @@ function ShareCard({ username }) {
             ctx.fillRect(0, 0, size, size);
             ctx.drawImage(img, 0, 0, size, size);
 
-            const badgeSize = 72;
+            // Centered dark badge with rounded corners and official app logo
+            const badgeSize = Math.round(size * 0.18);
             const badgeX = (size - badgeSize) / 2;
             const badgeY = (size - badgeSize) / 2;
-            const radius = 14;
+            const radius = Math.round(badgeSize * 0.22);
 
+            // Black rounded badge background
             ctx.fillStyle = '#000000';
             ctx.beginPath();
             drawSafeRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, radius);
             ctx.fill();
 
+            // Crisp white outer border
             ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 6;
             ctx.stroke();
 
-            const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${badgeSize}" height="${badgeSize}"><path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /><path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
-            const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml;charset=utf-8' });
-            const svgUrl = URL.createObjectURL(svgBlob);
-            const logoImg = new Image();
+            // Draw official BrandLogo link vectors
+            const iconSize = Math.round(badgeSize * 0.54);
+            const scale = iconSize / 24;
+            const offsetX = badgeX + (badgeSize - iconSize) / 2;
+            const offsetY = badgeY + (badgeSize - iconSize) / 2;
 
-            logoImg.onload = async () => {
-              const padding = 12;
-              ctx.drawImage(logoImg, badgeX + padding, badgeY + padding, badgeSize - padding * 2, badgeSize - padding * 2);
-              URL.revokeObjectURL(svgUrl);
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
 
-              if (canvas.toBlob) {
-                canvas.toBlob(async (blob) => {
-                  if (blob) {
-                    await saveBlobFile(blob, filename);
-                    resolve();
-                  } else {
-                    reject(new Error('Canvas blob generation failed'));
-                  }
-                }, 'image/png');
-              } else {
-                const dataUrl = canvas.toDataURL('image/png');
-                const res = await fetch(dataUrl);
-                const blob = await res.blob();
-                await saveBlobFile(blob, filename);
+            if (typeof Path2D !== 'undefined') {
+              ctx.stroke(new Path2D("M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"));
+              ctx.stroke(new Path2D("M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"));
+            } else {
+              ctx.beginPath();
+              ctx.arc(14.5, 9.5, 4.5, 0.75 * Math.PI, 1.75 * Math.PI);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(9.5, 14.5, 4.5, 1.75 * Math.PI, 0.75 * Math.PI);
+              ctx.stroke();
+            }
+            ctx.restore();
+
+            if (canvas.toBlob) {
+              canvas.toBlob(async (blob) => {
+                if (blob) {
+                  await saveBlobFile(blob, filename);
+                  resolve();
+                } else {
+                  reject(new Error('Canvas blob generation failed'));
+                }
+              }, 'image/png');
+            } else {
+              const dataUrl = canvas.toDataURL('image/png');
+              fetch(dataUrl).then((r) => r.blob()).then(async (b) => {
+                await saveBlobFile(b, filename);
                 resolve();
-              }
-            };
-            logoImg.onerror = () => reject(new Error('Logo image loading failed'));
-            logoImg.src = svgUrl;
+              }).catch(reject);
+            }
           } catch (canvasErr) {
             reject(canvasErr);
           }
@@ -365,10 +382,10 @@ function ShareCard({ username }) {
       <div className="relative overflow-hidden rounded-2xl border-2 border-black bg-black p-3 shadow-xl">
         <img src={qrUrl} alt={`QR code for ${pageUrl}`} className="h-36 w-36 rounded-xl object-contain bg-white p-1" />
         {/* Centered App Logo Badge — small to preserve QR scannability */}
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-black border-[2px] border-white shadow-xl p-1">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="h-4 w-4">
-            <path d="M13 17a4 4 0 0 0 5.66.44l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.4 1.4" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M19 15a4 4 0 0 0-5.66-.44l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.4-1.4" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-xl bg-black border-2 border-white shadow-xl p-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         </div>
       </div>

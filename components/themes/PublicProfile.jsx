@@ -598,35 +598,49 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
             ctx.fillRect(0, 0, size, size);
             ctx.drawImage(img, 24, 24, size - 48, size - 48);
 
-            // Centered dark badge with rounded corners
-            const badgeSize = 130;
+            // Centered dark badge with rounded corners and official app logo
+            const badgeSize = Math.round(size * 0.18);
             const badgeX = (size - badgeSize) / 2;
             const badgeY = (size - badgeSize) / 2;
-            const radius = 28;
+            const radius = Math.round(badgeSize * 0.22);
 
+            // Black rounded badge background
             ctx.fillStyle = '#000000';
             ctx.beginPath();
             drawSafeRoundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, radius);
             ctx.fill();
 
+            // Crisp white outer border
             ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 10;
+            ctx.lineWidth = 6;
             ctx.stroke();
 
-            // Draw interlocking link chains
+            // Draw official BrandLogo link vectors
+            const iconSize = Math.round(badgeSize * 0.54);
+            const scale = iconSize / 24;
+            const offsetX = badgeX + (badgeSize - iconSize) / 2;
+            const offsetY = badgeY + (badgeSize - iconSize) / 2;
+
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
             ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 11;
+            ctx.lineWidth = 2.4;
             ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
 
-            // Left link loop
-            ctx.beginPath();
-            ctx.arc(badgeX + badgeSize * 0.4, badgeY + badgeSize * 0.5, 20, 0.75 * Math.PI, 1.75 * Math.PI);
-            ctx.stroke();
-
-            // Right link loop
-            ctx.beginPath();
-            ctx.arc(badgeX + badgeSize * 0.6, badgeY + badgeSize * 0.5, 20, 1.75 * Math.PI, 0.75 * Math.PI);
-            ctx.stroke();
+            if (typeof Path2D !== 'undefined') {
+              ctx.stroke(new Path2D("M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"));
+              ctx.stroke(new Path2D("M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"));
+            } else {
+              ctx.beginPath();
+              ctx.arc(14.5, 9.5, 4.5, 0.75 * Math.PI, 1.75 * Math.PI);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(9.5, 14.5, 4.5, 1.75 * Math.PI, 0.75 * Math.PI);
+              ctx.stroke();
+            }
+            ctx.restore();
 
             if (canvas.toBlob) {
               canvas.toBlob(async (blob) => {
@@ -722,7 +736,10 @@ function ProfileShareModal({ profile, isOpen, onClose, onOpenReport }) {
                 
                 {/* Apps Interlocking Link Icon in the Middle */}
                 <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-2xl bg-black border-2 border-white shadow-2xl">
-                  <Link2 size={20} className="text-white" strokeWidth={2.8} />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
                 </div>
               </div>
 
@@ -1410,9 +1427,9 @@ export default function PublicProfile({ profile, blocks }) {
       {customFontUrl && (
         <link rel="stylesheet" href={customFontUrl} />
       )}
-      <div className="min-h-screen w-full bg-[#18181B] flex items-center justify-center p-0 sm:p-6 md:p-10">
+      <div className="min-h-[100dvh] w-full bg-[#18181B] flex flex-col items-center justify-center p-0 sm:py-6 sm:px-4">
         <main
-          className="link-page relative w-full sm:max-w-[580px] min-h-screen sm:min-h-[850px] sm:rounded-[36px] overflow-hidden px-5 py-8 sm:px-8 sm:py-10 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
+          className="link-page relative w-full sm:max-w-[580px] min-h-[100dvh] sm:min-h-0 sm:my-auto sm:rounded-[36px] overflow-hidden px-5 pt-6 pb-4 sm:px-8 sm:pt-8 sm:pb-6 flex flex-col items-center justify-between shadow-2xl transition-all duration-300"
           style={{
             ...getBackground(profile || {}),
             color: text,
@@ -1550,37 +1567,38 @@ export default function PublicProfile({ profile, blocks }) {
                 );
               })}
             </nav>
-
-            {/* Viral Conversion Join Button */}
-            <div className="mt-10 flex w-full justify-center">
-              <button
-                onClick={() => setClaimOpen(true)}
-                className="flex items-center gap-1.5 rounded-full border border-current/15 bg-white/90 px-6 py-2.5 text-xs font-black text-black shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"
-              >
-                <span>Join {profile?.display_name || `@${profile?.username || 'creator'}`} on</span>
-                <BrandLogo size="xs" variant="text" theme="current" />
-              </button>
-            </div>
           </div>
 
-          {/* Footer Legal & Modal Links - Lowered to bottom */}
-          <footer className="mt-auto pt-14 pb-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] opacity-60 font-medium">
-            <button onClick={() => handleOpenSpecificReport('Account profile')} className="hover:underline">
-              Report
+          {/* Bottom Actions & Legal Footer - Anchored at bottom of page */}
+          <div className="mt-auto pt-6 pb-1 w-full flex flex-col items-center gap-3 shrink-0">
+            {/* Viral Conversion Join Button */}
+            <button
+              onClick={() => setClaimOpen(true)}
+              className="flex items-center gap-1.5 rounded-full border border-current/15 bg-white/90 px-5 py-2 text-xs font-black text-black shadow-lg backdrop-blur-md transition hover:scale-105 active:scale-95"
+            >
+              <span>Join {profile?.display_name || `@${profile?.username || 'creator'}`} on</span>
+              <BrandLogo size="xs" variant="text" theme="current" />
             </button>
-            <span>•</span>
-            <Link href="/privacy" className="hover:underline">
-              Privacy
-            </Link>
-            <span>•</span>
-            <Link href="/terms" className="hover:underline">
-              Terms
-            </Link>
-            <span>•</span>
-            <button onClick={() => setAboutOpen(true)} className="hover:underline font-semibold">
-              About this account
-            </button>
-          </footer>
+
+            {/* Footer Legal & Modal Links */}
+            <footer className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[11px] opacity-60 font-medium">
+              <button onClick={() => handleOpenSpecificReport('Account profile')} className="hover:underline">
+                Report
+              </button>
+              <span>•</span>
+              <Link href="/privacy" className="hover:underline">
+                Privacy
+              </Link>
+              <span>•</span>
+              <Link href="/terms" className="hover:underline">
+                Terms
+              </Link>
+              <span>•</span>
+              <button onClick={() => setAboutOpen(true)} className="hover:underline font-semibold">
+                About this account
+              </button>
+            </footer>
+          </div>
         </div>
 
         {/* Interactive Modals */}
