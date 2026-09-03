@@ -4,5 +4,5 @@ import SocialLinksManager from '../profile/SocialLinksManager';
 
 export default function SocialIconsManager() {
   const { profile, updateProfile } = useDashboard();
-  return <SocialLinksManager profile={profile} updateProfile={updateProfile} />;
+  return <SocialLinksManager profile={profile} updateProfile={updateProfile} isLinksPage={true} />;
 }

@@ -253,9 +253,10 @@ function PreviewCallout({ data, profile }) {
 }
 
 function PreviewSocialsBar({ profile }) {
+  const isSocialsVisible = profile?.socials?._visible !== false;
   const accounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
-  const grouped = useMemo(() => groupAccountsByPlatform(accounts), [accounts]);
-  if (Object.keys(grouped).length === 0) return null;
+  const grouped = useMemo(() => groupAccountsByPlatform(accounts, { onlyVisible: true }), [accounts]);
+  if (!isSocialsVisible || Object.keys(grouped).length === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 my-1">
@@ -303,8 +304,9 @@ export default function LivePreview({ profile, blocks }) {
   const font = FONT_MAP[profile?.font_family] || FONT_MAP[profile?.font] || FONT_MAP.inter;
   const customFontUrl = GOOGLE_FONT_URLS[profile?.font_family] || GOOGLE_FONT_URLS[profile?.font];
   const visibleBlocks = (blocks || []).filter((b) => b.is_visible !== false);
+  const isSocialsVisible = profile?.socials?._visible !== false;
   const previewAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
-  const previewGrouped = useMemo(() => groupAccountsByPlatform(previewAccounts), [previewAccounts]);
+  const previewGrouped = useMemo(() => groupAccountsByPlatform(previewAccounts, { onlyVisible: true }), [previewAccounts]);
 
   const username = profile?.username || 'creator';
   const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${username}` : `/${username}`;
@@ -440,7 +442,7 @@ export default function LivePreview({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {Object.keys(previewGrouped).length > 0 && (
+            {isSocialsVisible && Object.keys(previewGrouped).length > 0 && (
               <div className="mt-3.5 flex flex-wrap justify-center gap-2.5">
                 {Object.entries(previewGrouped).map(([platform, accountList]) => {
                   const icon = ICONS[platform] || ICONS.link;

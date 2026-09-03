@@ -1372,7 +1372,8 @@ export default function PublicProfile({ profile, blocks }) {
   const [activeMultiPlatform, setActiveMultiPlatform] = useState(null);
 
   const socialAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
-  const groupedAccounts = useMemo(() => groupAccountsByPlatform(socialAccounts), [socialAccounts]);
+  const isSocialsVisible = profile?.socials?._visible !== false;
+  const groupedAccounts = useMemo(() => groupAccountsByPlatform(socialAccounts, { onlyVisible: true }), [socialAccounts]);
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
@@ -1535,7 +1536,7 @@ export default function PublicProfile({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {Object.keys(groupedAccounts).length > 0 && (
+            {isSocialsVisible && Object.keys(groupedAccounts).length > 0 && (
               <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
                 {Object.entries(groupedAccounts).map(([platform, accountList]) => {
                   const icon = ICONS[platform] || ICONS.link;
