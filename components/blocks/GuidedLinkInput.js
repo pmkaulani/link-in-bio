@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   PLATFORMS,
   COUNTRY_CODES,
@@ -7,6 +7,61 @@ import {
   detectPlatformFromUrl,
 } from '../../lib/platformGuide';
 import { HelpCircle, Sparkles, Check, ChevronDown } from 'lucide-react';
+
+function CountryCodeDropdown({ countryCode, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex h-full items-center gap-1.5 rounded-[8px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 text-xs font-bold text-black hover:border-black shadow-xs transition"
+      >
+        <span>{countryCode}</span>
+        <ChevronDown size={12} className={`text-zinc-400 transition-transform ${open ? 'rotate-180 text-black' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 w-56 max-h-56 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl animate-fadeIn">
+          {COUNTRY_CODES.map((c) => {
+            const isSelected = c.code === countryCode;
+            return (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => {
+                  onSelect(c.code);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
+                  isSelected ? 'bg-zinc-100 font-bold text-black' : 'text-zinc-700 hover:bg-zinc-50 hover:text-black font-medium'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-black">{c.code}</span>
+                  <span className="text-zinc-500 text-[11px] truncate">{c.country}</span>
+                </div>
+                {isSelected && <Check size={12} className="text-black shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function GuidedLinkInput({
   platform = 'link',
@@ -201,22 +256,13 @@ export default function GuidedLinkInput({
           </label>
           <div className="flex gap-2">
             {/* Country Code Dropdown */}
-            <div className="relative shrink-0">
-              <select
-                value={countryCode}
-                onChange={(e) => {
-                  setCountryCode(e.target.value);
-                  handlePhoneChange(phoneVal, e.target.value);
-                }}
-                className="h-full rounded-[8px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 text-xs font-bold text-black focus:border-black focus:outline-none shadow-xs"
-              >
-                {COUNTRY_CODES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.flag} {c.code} ({c.country})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <CountryCodeDropdown
+              countryCode={countryCode}
+              onSelect={(code) => {
+                setCountryCode(code);
+                handlePhoneChange(phoneVal, code);
+              }}
+            />
 
             {/* Phone Number Field */}
             <div className="relative flex-1">
@@ -359,7 +405,7 @@ export default function GuidedLinkInput({
       {/* Contextual Smart Helper Tip */}
       {showContextualTip && platConfig.tip && (
         <div className="flex items-start gap-1.5 rounded-lg bg-zinc-50 p-2.5 border border-zinc-200/70 text-[11px] text-zinc-600">
-          <span className="shrink-0 text-amber-500 font-bold">💡</span>
+          <Sparkles size={13} className="text-zinc-500 shrink-0 mt-0.5" />
           <span>{platConfig.tip}</span>
         </div>
       )}

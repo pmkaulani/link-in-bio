@@ -1,8 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { ICONS, ICON_KEYS } from '../../lib/icons';
 import { ENTRANCE_ANIMATIONS as ANIMATIONS, HOVER_EFFECTS as HOVERS } from '../../lib/presets';
-import { Image as ImageIcon, Clock, Plus, X, ChevronDown } from 'lucide-react';
+import { Image as ImageIcon, Clock, Plus, X, ChevronDown, Check } from 'lucide-react';
 import CustomSelect from '../CustomSelect';
 import GuidedLinkInput from './GuidedLinkInput';
 import SocialIcon from '../ui/SocialIcon';
@@ -137,6 +137,66 @@ function LinkEditor({ data, onUpdate }) {
     return 'link';
   }, [data.platform, data.icon, data.url]);
 
+function PlatformDropdown({ activePlatform, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const current = PLATFORMS[activePlatform] || PLATFORMS.link;
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-black shadow-xs hover:border-black hover:bg-zinc-50 transition"
+      >
+        <SocialIcon name={current.icon || activePlatform} className="text-[13px]" />
+        <span>{current.label}</span>
+        <ChevronDown size={12} className={`text-zinc-400 transition-transform ${open ? 'rotate-180 text-black' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-52 max-h-64 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl animate-fadeIn">
+          {Object.entries(PLATFORMS).map(([k, p]) => {
+            const isSelected = k === activePlatform;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => {
+                  onSelect(k);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold transition ${
+                  isSelected ? 'bg-zinc-100 text-black font-bold' : 'text-zinc-700 hover:bg-zinc-50 hover:text-black'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+                    <SocialIcon name={p.icon || k} className="text-[14px]" />
+                  </div>
+                  <span className="truncate">{p.label}</span>
+                </div>
+                {isSelected && <Check size={13} className="text-black shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
   return (
     <div className="space-y-4">
       {/* 1. Primary: Where should this link go? */}
@@ -147,10 +207,9 @@ function LinkEditor({ data, onUpdate }) {
           </label>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-zinc-400">Platform:</span>
-            <select
-              value={activePlatform}
-              onChange={(e) => {
-                const newPlat = e.target.value;
+            <PlatformDropdown
+              activePlatform={activePlatform}
+              onSelect={(newPlat) => {
                 const cfg = PLATFORMS[newPlat];
                 onUpdate({
                   platform: newPlat,
@@ -158,12 +217,7 @@ function LinkEditor({ data, onUpdate }) {
                   title: data.title || (cfg?.defaultTitle ? cfg.defaultTitle('') : ''),
                 });
               }}
-              className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-bold text-black focus:border-black focus:outline-none"
-            >
-              {Object.entries(PLATFORMS).map(([k, p]) => (
-                <option key={k} value={k}>{p.label}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
@@ -413,7 +467,7 @@ function CalloutEditor({ data, onUpdate }) {
           onFocus={handleAutoScroll}
           rows={2}
           className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none"
-          placeholder="e.g. 🔥 New merch drop live this Friday at 6 PM!"
+          placeholder="e.g. New merch drop live this Friday at 6 PM!"
         />
       </Field>
     </div>

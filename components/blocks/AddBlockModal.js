@@ -426,7 +426,7 @@ export default function AddBlockModal({ isOpen, onClose, onAdd }) {
                         type="text"
                         value={contentDraft.text || ''}
                         onChange={(e) => setContentDraft({ ...contentDraft, text: e.target.value })}
-                        placeholder="e.g. New album out this Friday! 🚀"
+                        placeholder="e.g. New album out this Friday!"
                         className="w-full rounded-[8px] border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold text-black focus:border-black focus:outline-none"
                       />
                     </div>

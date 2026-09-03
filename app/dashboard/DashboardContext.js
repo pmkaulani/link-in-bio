@@ -31,7 +31,7 @@ const BLOCK_DEFAULTS = {
   divider: { style: 'line' },
   spacer: { height: 32 },
   grid: { items: [] },
-  callout: { text: '🔥 Special announcement or drop details here!', style: 'highlight', icon: 'sparkles' },
+  callout: { text: 'Special announcement or drop details here!', style: 'highlight', icon: 'sparkles' },
   socials_bar: { style: 'pills', align: 'center' },
 };
 

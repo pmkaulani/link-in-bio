@@ -988,7 +988,7 @@ export default function Home() {
                 <div className="rounded-2xl border border-white/20 bg-gradient-to-r from-zinc-900 to-zinc-800 p-3.5 text-xs text-white flex items-center justify-between animate-profile-in shadow-md">
                   <div className="flex items-center gap-2">
                     <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white text-black font-black text-[10px]">
-                      🔥
+                      <Megaphone size={12} />
                     </span>
                     <span className="font-black text-xs">Special Drop: 2026 Edition Live!</span>
                   </div>
