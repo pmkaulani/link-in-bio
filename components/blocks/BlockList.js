@@ -112,13 +112,19 @@ export default function BlockList({ blocks, onAdd, onUpdate, onDelete, onToggleV
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="flex flex-col items-center gap-2 rounded-none border-y border-dashed border-zinc-200 bg-zinc-50/80 py-12 text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100 text-black">
-            <Plus size={20} />
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="group flex flex-col items-center gap-2.5 w-full rounded-none border-y border-dashed border-zinc-200 bg-zinc-50/80 py-12 px-4 text-center transition hover:bg-zinc-100/90 hover:border-zinc-300 active:scale-[0.99] cursor-pointer focus:outline-none focus:ring-2 focus:ring-black focus:ring-inset"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white border border-zinc-200 text-black shadow-sm group-hover:bg-black group-hover:text-white group-hover:border-black group-hover:scale-105 transition duration-200">
+            <Plus size={22} strokeWidth={2.5} />
           </div>
-          <p className="text-sm font-bold text-black">No links or content yet</p>
-          <p className="text-xs text-zinc-500">Click &ldquo;Add new block or link&rdquo; above to start building your page.</p>
-        </div>
+          <div>
+            <p className="text-sm font-bold text-black group-hover:underline">No links or content yet</p>
+            <p className="mt-0.5 text-xs text-zinc-500">Tap here or &ldquo;Add new block or link&rdquo; above to start building your page.</p>
+          </div>
+        </button>
       )}
     </div>
   );
