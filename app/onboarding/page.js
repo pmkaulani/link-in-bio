@@ -294,6 +294,17 @@ export default function OnboardingPage() {
           }
 
           if (Object.keys(selectedSocials).length > 0) {
+            // Remove any pre-existing blocks to prevent duplicates if onboarding is completed multiple times
+            await supabase.from('blocks').delete().eq('profile_id', activeUserId);
+
+            const LOOK_CARD = {
+              minimal: { bg: '#18181B', text: '#ffffff' },
+              bold:    { bg: '#3F3F46', text: '#ffffff' },
+              glow:    { bg: 'rgba(255,255,255,0.15)', text: '#ffffff' },
+              retro:   { bg: '#ffffff', text: '#000000' },
+            };
+            const card = LOOK_CARD[selectedLook] || LOOK_CARD.minimal;
+
             await Promise.all(
               Object.entries(selectedSocials).map(([icon, url], i) => {
                 const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
@@ -308,9 +319,9 @@ export default function OnboardingPage() {
                     animation: 'slideUp',
                     hover_effect: hoverEffect,
                     background_type: 'solid',
-                    background_value: selectedLook === 'retro' ? '#ffffff' : (theme.primary_color || '#000000'),
-                    text_color: selectedLook === 'retro' ? '#000000' : '#ffffff',
-                    is_featured: i === 0,
+                    background_value: card.bg,
+                    text_color: card.text,
+                    is_featured: false,
                   },
                 });
               })
