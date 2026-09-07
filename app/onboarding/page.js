@@ -268,7 +268,7 @@ export default function OnboardingPage() {
     if (activeUserId) {
       try {
         if (isSupabaseConfigured) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({
               username: username || 'user',
@@ -283,10 +283,15 @@ export default function OnboardingPage() {
               button_style: theme.button_style || (selectedLook === 'retro' ? 'hard_shadow' : 'fill'),
               button_radius: theme.button_radius ?? (selectedLook === 'retro' ? 8 : 24),
               font_family: theme.font_family || 'inter',
-              font: theme.font || theme.font_family || 'inter',
               onboarded: true,
             })
             .eq('id', activeUserId);
+
+          if (updateError) {
+            console.error('Onboarding profile update failed:', updateError);
+            setSaving(false);
+            return;
+          }
 
           if (Object.keys(selectedSocials).length > 0) {
             await Promise.all(
@@ -331,7 +336,6 @@ export default function OnboardingPage() {
                 button_style: theme.button_style || (selectedLook === 'retro' ? 'hard_shadow' : 'fill'),
                 button_radius: theme.button_radius ?? (selectedLook === 'retro' ? 8 : 24),
                 font_family: theme.font_family || 'inter',
-                font: theme.font || theme.font_family || 'inter',
                 onboarded: true,
               };
               localStorage.setItem('local_supabase_db', JSON.stringify(parsed));
