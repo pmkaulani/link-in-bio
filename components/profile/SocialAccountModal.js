@@ -5,6 +5,7 @@ import {
   COUNTRY_CODES,
   cleanUsername,
   detectPlatformFromUrl,
+  splitPhoneNumber,
 } from '../../lib/platformGuide';
 import { createAccountId } from '../../lib/socialAccounts';
 import SocialIcon from '../ui/SocialIcon';
@@ -144,16 +145,12 @@ export default function SocialAccountModal({
 
       // For phone/whatsapp, extract country code if present
       if (accountToEdit.platform === 'whatsapp' || accountToEdit.platform === 'phone') {
-        const raw = accountToEdit.username || accountToEdit.url || '';
-        const digits = raw.replace(/[^0-9]/g, '');
-        const matched = COUNTRY_CODES.find((c) => digits.startsWith(c.code.replace('+', '')));
-        if (matched) {
-          setCountryCode(matched.code);
-          const rest = digits.slice(matched.code.replace('+', '').length);
-          setUsername(rest || raw);
-        } else {
-          setUsername(accountToEdit.username || '');
+        const source = accountToEdit.url || accountToEdit.username || '';
+        const parsed = splitPhoneNumber(source, '+1');
+        if (parsed.countryCode) {
+          setCountryCode(parsed.countryCode);
         }
+        setUsername(parsed.nationalNumber || accountToEdit.username || '');
       } else {
         setUsername(accountToEdit.username || '');
       }
@@ -180,16 +177,41 @@ export default function SocialAccountModal({
   function handleUsernameChange(val) {
     if (platConfig.mode === 'phone') {
       const trimmed = val.trim();
+
+      // Check if user pasted a full URL
+      const detected = detectPlatformFromUrl(val);
+      if (detected && (detected.platformKey === 'whatsapp' || detected.platformKey === 'phone')) {
+        const parsed = splitPhoneNumber(detected.cleanUrl, countryCode);
+        if (parsed.countryCode) setCountryCode(parsed.countryCode);
+        setUsername(parsed.nationalNumber);
+        const matched = COUNTRY_CODES.find((c) => c.code === parsed.countryCode);
+        setPasteFeedback(`Selected ${matched?.country || ''} (${parsed.countryCode})`);
+        return;
+      }
+
       if (trimmed.startsWith('+')) {
-        const matched = COUNTRY_CODES.find((c) => trimmed.startsWith(c.code));
-        if (matched) {
-          setCountryCode(matched.code);
-          const rest = trimmed.slice(matched.code.length).trim();
-          setUsername(rest);
-          setPasteFeedback(`Selected ${matched.country} (${matched.code})`);
+        const parsed = splitPhoneNumber(trimmed, countryCode);
+        if (parsed.countryCode) {
+          setCountryCode(parsed.countryCode);
+          setUsername(parsed.nationalNumber);
+          const matched = COUNTRY_CODES.find((c) => c.code === parsed.countryCode);
+          setPasteFeedback(`Selected ${matched?.country || ''} (${parsed.countryCode})`);
           return;
         }
       }
+
+      // If user typed/pasted the current country code digits, strip redundant prefix
+      const codeDigits = countryCode.replace(/\D/g, '');
+      const digitsOnly = val.replace(/\D/g, '');
+      if (codeDigits && digitsOnly.startsWith(codeDigits) && digitsOnly.length > codeDigits.length) {
+        const stripped = digitsOnly.slice(codeDigits.length);
+        setUsername(stripped);
+        return;
+      }
+
+      setUsername(val);
+      setPasteFeedback(null);
+      return;
     }
 
     setUsername(val);
@@ -546,7 +568,11 @@ export default function SocialAccountModal({
                       )}
                     </div>
                     <span className="block text-[11px] font-medium text-zinc-500 truncate">
-                      {displayName
+                      {platConfig.mode === 'phone'
+                        ? displayName
+                          ? `${displayName} (${countryCode} ${username || 'number'})`
+                          : `${countryCode} ${username || 'number'}`
+                        : displayName
                         ? `${displayName} (@${(username || 'handle').trim().replace(/^@+/, '')})`
                         : `@${(username || 'handle').trim().replace(/^@+/, '')}`}
                     </span>

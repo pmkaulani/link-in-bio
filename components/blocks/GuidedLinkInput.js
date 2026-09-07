@@ -5,6 +5,7 @@ import {
   COUNTRY_CODES,
   cleanUsername,
   detectPlatformFromUrl,
+  splitPhoneNumber,
 } from '../../lib/platformGuide';
 import { HelpCircle, Sparkles, Check, ChevronDown } from 'lucide-react';
 
@@ -99,9 +100,16 @@ export default function GuidedLinkInput({
   const [ytMode, setYtMode] = useState('channel');
   const [showHowToGuide, setShowHowToGuide] = useState(false);
   const [detectedFeedback, setDetectedFeedback] = useState(null);
+  const lastEmittedUrlRef = useRef(null);
 
   // Sync internal state when incoming url or platform changes
   useEffect(() => {
+    // If this incoming url was emitted by this component itself, do not overwrite local typing state
+    if (url && url === lastEmittedUrlRef.current) {
+      return;
+    }
+    lastEmittedUrlRef.current = url;
+
     if (!url) {
       setUsernameVal('');
       setPhoneVal('');
@@ -116,12 +124,11 @@ export default function GuidedLinkInput({
         setUsernameVal(cleanUsername(url));
       }
     } else if (platConfig.mode === 'phone') {
-      const parsed = platConfig.parseUrl ? platConfig.parseUrl(url) : null;
-      if (parsed) {
-        setPhoneVal(parsed);
-      } else {
-        setPhoneVal(url.replace(/[^\d+]/g, ''));
+      const parsedPhone = splitPhoneNumber(url, countryCode);
+      if (parsedPhone.countryCode) {
+        setCountryCode(parsedPhone.countryCode);
       }
+      setPhoneVal(parsedPhone.nationalNumber);
     } else if (platConfig.mode === 'youtube') {
       const parsed = platConfig.parseUrl ? platConfig.parseUrl(url) : null;
       if (parsed) {
@@ -145,6 +152,7 @@ export default function GuidedLinkInput({
         onPlatformChange(detected.platformKey);
       }
 
+      lastEmittedUrlRef.current = detected.cleanUrl;
       onChange({
         url: detected.cleanUrl,
         platform: detected.platformKey,
@@ -159,6 +167,7 @@ export default function GuidedLinkInput({
     const clean = cleanUsername(rawVal);
     setUsernameVal(clean);
     const finalUrl = platConfig.buildUrl ? platConfig.buildUrl(clean) : clean;
+    lastEmittedUrlRef.current = finalUrl;
     onChange({
       url: finalUrl,
       platform,
@@ -170,13 +179,43 @@ export default function GuidedLinkInput({
     // Check if user pasted a full wa.me or chat link
     const detected = detectPlatformFromUrl(val);
     if (detected && detected.platformKey === 'whatsapp') {
-      setPhoneVal(detected.value);
+      const parsed = splitPhoneNumber(detected.cleanUrl, customCode);
+      if (parsed.countryCode) setCountryCode(parsed.countryCode);
+      setPhoneVal(parsed.nationalNumber);
+      lastEmittedUrlRef.current = detected.cleanUrl;
       onChange({ url: detected.cleanUrl, platform: 'whatsapp' });
+      return;
+    }
+
+    // Check if user pasted or typed a number starting with "+"
+    if (val.trim().startsWith('+')) {
+      const parsed = splitPhoneNumber(val, customCode);
+      if (parsed.countryCode) {
+        setCountryCode(parsed.countryCode);
+        customCode = parsed.countryCode;
+      }
+      setPhoneVal(parsed.nationalNumber);
+      const finalUrl = platConfig.buildUrl ? platConfig.buildUrl(parsed.nationalNumber, customCode) : parsed.nationalNumber;
+      lastEmittedUrlRef.current = finalUrl;
+      onChange({ url: finalUrl, platform });
+      return;
+    }
+
+    // Check if user typed or pasted their current country code into the input field
+    const codeDigits = customCode.replace(/\D/g, '');
+    const digitsOnly = val.replace(/\D/g, '');
+    if (codeDigits && digitsOnly.startsWith(codeDigits) && digitsOnly.length > codeDigits.length) {
+      const stripped = digitsOnly.slice(codeDigits.length);
+      setPhoneVal(stripped);
+      const finalUrl = platConfig.buildUrl ? platConfig.buildUrl(stripped, customCode) : stripped;
+      lastEmittedUrlRef.current = finalUrl;
+      onChange({ url: finalUrl, platform });
       return;
     }
 
     setPhoneVal(val);
     const finalUrl = platConfig.buildUrl ? platConfig.buildUrl(val, customCode) : val;
+    lastEmittedUrlRef.current = finalUrl;
     onChange({
       url: finalUrl,
       platform,
@@ -189,12 +228,14 @@ export default function GuidedLinkInput({
     if (detected && detected.platformKey === 'youtube') {
       setYtMode(detected.mode);
       setUsernameVal(detected.value);
+      lastEmittedUrlRef.current = detected.cleanUrl;
       onChange({ url: detected.cleanUrl, platform: 'youtube' });
       return;
     }
 
     setUsernameVal(val);
     const finalUrl = platConfig.buildUrl ? platConfig.buildUrl(val, mode) : val;
+    lastEmittedUrlRef.current = finalUrl;
     onChange({
       url: finalUrl,
       platform: 'youtube',
@@ -208,6 +249,7 @@ export default function GuidedLinkInput({
       setDetectedFeedback(`Recognized ${PLATFORMS[detected.platformKey]?.label || detected.platformKey}!`);
       setTimeout(() => setDetectedFeedback(null), 3000);
       onPlatformChange(detected.platformKey);
+      lastEmittedUrlRef.current = detected.cleanUrl;
       onChange({
         url: detected.cleanUrl,
         platform: detected.platformKey,
@@ -218,6 +260,7 @@ export default function GuidedLinkInput({
       return;
     }
 
+    lastEmittedUrlRef.current = rawVal;
     onChange({
       url: rawVal,
       platform,

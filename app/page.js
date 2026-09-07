@@ -390,30 +390,33 @@ export default function Home() {
             </p>
 
             {/* Instant Claim Handle Form */}
-            <div className="mt-8 w-full max-w-md">
+            <div className="mt-8 w-full max-w-xl">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   const handle = e.currentTarget.elements.username.value.trim();
                   window.location.href = handle ? `/signup?username=${encodeURIComponent(handle)}` : '/signup';
                 }}
-                className="flex items-center rounded-[10px] border border-zinc-800 bg-zinc-950 p-1.5 transition focus-within:border-white/50 focus-within:ring-1 focus-within:ring-white/20 shadow-xl"
+                className="flex flex-col sm:flex-row items-stretch sm:items-center rounded-xl sm:rounded-[10px] border border-zinc-800 bg-zinc-950 p-1.5 sm:p-1.5 transition focus-within:border-white/50 focus-within:ring-1 focus-within:ring-white/20 shadow-xl gap-2 sm:gap-0"
               >
-                <span className="flex items-center gap-1.5 rounded-[7px] bg-zinc-900 border border-zinc-800/80 px-3 py-2 text-xs font-mono font-bold text-zinc-400 select-none shrink-0">
-                  <Globe size={13} className="text-zinc-500" />
-                  <span>{APP_DOMAIN}/</span>
-                </span>
-                <input
-                  name="username"
-                  type="text"
-                  placeholder="yourname"
-                  className="w-full bg-transparent px-2.5 text-xs sm:text-sm font-mono font-bold text-white outline-none placeholder:text-zinc-700"
-                />
+                <div className="flex items-center flex-1 min-w-0">
+                  <span className="flex items-center gap-1.5 rounded-[7px] bg-zinc-900 border border-zinc-800/80 px-2.5 sm:px-3 py-2 text-xs font-mono font-bold text-zinc-400 select-none shrink-0">
+                    <Globe size={13} className="text-zinc-500 shrink-0" />
+                    <span className="sm:hidden">bio/</span>
+                    <span className="hidden sm:inline truncate max-w-[200px] md:max-w-none">{APP_DOMAIN}/</span>
+                  </span>
+                  <input
+                    name="username"
+                    type="text"
+                    placeholder="yourname"
+                    className="w-full flex-1 min-w-0 bg-transparent px-3 py-2 text-base sm:text-sm font-mono font-bold text-white outline-none placeholder:text-zinc-500"
+                  />
+                </div>
                 <MagneticButton
                   as="button"
                   type="submit"
                   strength={0.15}
-                  className="flex items-center gap-1.5 rounded-[8px] bg-white px-4 py-2.5 text-xs sm:text-sm font-black text-black transition hover:bg-zinc-200 active:scale-95 shrink-0"
+                  className="flex items-center justify-center gap-1.5 rounded-[8px] bg-white px-5 py-3 sm:py-2.5 text-xs sm:text-sm font-black text-black transition hover:bg-zinc-200 active:scale-95 shrink-0 w-full sm:w-auto"
                 >
                   <span>Claim free</span>
                   <ArrowRight size={14} />
@@ -430,7 +433,7 @@ export default function Home() {
             </div>
 
             {/* Theme switcher pill bar for the hero */}
-            <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-1.5 pt-4 border-t border-zinc-900 w-full max-w-md">
+            <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-1.5 pt-4 border-t border-zinc-900 w-full max-w-xl">
               <span className="text-[10px] uppercase font-bold text-zinc-500 mr-1">Preview Theme:</span>
               {SHOWCASE_THEMES.map((t) => (
                 <button
@@ -1182,26 +1185,27 @@ export default function Home() {
               e.preventDefault();
               window.location.href = `/signup?username=${encodeURIComponent(demoHandle)}`;
             }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-2.5 max-w-md mx-auto px-4"
+            className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 max-w-xl mx-auto px-4"
           >
             <div className="flex items-center rounded-[10px] border border-zinc-800 bg-zinc-900/90 p-1.5 w-full focus-within:border-white/50 focus-within:ring-1 focus-within:ring-white/20 transition shadow-lg">
-              <span className="flex items-center gap-1.5 rounded-[7px] bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs font-mono font-bold text-zinc-400 select-none shrink-0">
-                <Globe size={13} className="text-zinc-500" />
-                <span>{APP_DOMAIN}/</span>
+              <span className="flex items-center gap-1.5 rounded-[7px] bg-zinc-950 border border-zinc-800 px-2.5 sm:px-3 py-2 text-xs font-mono font-bold text-zinc-400 select-none shrink-0">
+                <Globe size={13} className="text-zinc-500 shrink-0" />
+                <span className="sm:hidden">bio/</span>
+                <span className="hidden sm:inline truncate max-w-[200px] md:max-w-none">{APP_DOMAIN}/</span>
               </span>
               <input
                 type="text"
                 value={demoHandle}
                 onChange={(e) => setDemoHandle(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
                 placeholder="yourname"
-                className="w-full bg-transparent px-2.5 text-xs sm:text-sm font-mono font-bold text-white outline-none placeholder:text-zinc-600"
+                className="w-full flex-1 min-w-0 bg-transparent px-3 py-2 text-base sm:text-sm font-mono font-bold text-white outline-none placeholder:text-zinc-500"
               />
             </div>
             <MagneticButton
               as="button"
               type="submit"
               strength={0.2}
-              className="w-full sm:w-auto rounded-[8px] bg-white px-6 py-3.5 text-xs font-black text-black transition hover:bg-zinc-200 active:scale-95 shrink-0"
+              className="w-full sm:w-auto rounded-[8px] bg-white px-6 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-black transition hover:bg-zinc-200 active:scale-95 shrink-0"
             >
               Build my page
             </MagneticButton>

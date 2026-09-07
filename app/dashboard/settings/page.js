@@ -587,9 +587,10 @@ export default function SettingsPage() {
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
                 <div className="flex flex-1 items-center overflow-hidden rounded-[8px] border border-zinc-300 bg-white focus-within:border-black focus-within:ring-1 focus-within:ring-black shadow-xs">
-                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3 py-2 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
-                    <Globe size={12} className="text-zinc-400" />
-                    <span>{APP_DOMAIN}/</span>
+                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-2.5 sm:px-3 py-2 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
+                    <Globe size={12} className="text-zinc-400 shrink-0" />
+                    <span className="sm:hidden">bio/</span>
+                    <span className="hidden sm:inline">{APP_DOMAIN}/</span>
                   </span>
                   <input
                     type="text"
@@ -598,7 +599,7 @@ export default function SettingsPage() {
                       setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''));
                       if (usernameFeedback.msg) setUsernameFeedback({ msg: '', type: '' });
                     }}
-                    className="w-full bg-transparent px-2.5 py-2 text-xs font-mono font-bold text-black outline-none"
+                    className="w-full bg-transparent px-3 py-2 text-sm font-mono font-bold text-black outline-none"
                     placeholder="yourname"
                   />
                 </div>

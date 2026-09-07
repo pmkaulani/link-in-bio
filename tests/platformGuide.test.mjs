@@ -5,6 +5,7 @@ import {
   detectPlatformFromUrl,
   cleanUsername,
   ensureHttps,
+  splitPhoneNumber,
 } from '../lib/platformGuide.js';
 
 test('Intelligent Platform Guide: URL Auto-Detection', async (t) => {
@@ -138,6 +139,39 @@ test('Intelligent Platform Guide: Clean Username & URL Builders', async (t) => {
     assert.equal(PLATFORMS.whatsapp.buildUrl('712 345 678', '+254'), 'https://wa.me/254712345678');
     assert.equal(PLATFORMS.whatsapp.buildUrl('0712 345 678', '+254'), 'https://wa.me/254712345678');
     assert.equal(PLATFORMS.whatsapp.buildUrl('+1 (555) 123-4567', '+1'), 'https://wa.me/15551234567');
+  });
+
+  await t.test('prevents country code duplication when number already has country code', () => {
+    // If input already has country code, it should NOT prepend 254 again to make 254254
+    assert.equal(PLATFORMS.whatsapp.buildUrl('254712345678', '+254'), 'https://wa.me/254712345678');
+    assert.equal(PLATFORMS.whatsapp.buildUrl('+254 712 345 678', '+254'), 'https://wa.me/254712345678');
+    // If input is only the country code digits without national number, it returns ''
+    assert.equal(PLATFORMS.whatsapp.buildUrl('254', '+254'), '');
+    // If input is a partial local number (e.g. user backspaced to '25'), it builds with country code without duplicating
+    assert.equal(PLATFORMS.whatsapp.buildUrl('25', '+254'), 'https://wa.me/25425');
+    assert.equal(PLATFORMS.phone.buildUrl('254712345678', '+254'), 'tel:+254712345678');
+  });
+
+  await t.test('splitPhoneNumber splits URLs and phone numbers accurately', () => {
+    const waUrl = splitPhoneNumber('https://wa.me/254712345678', '+1');
+    assert.equal(waUrl.countryCode, '+254');
+    assert.equal(waUrl.nationalNumber, '712345678');
+
+    const withPlus = splitPhoneNumber('+254 712 345 678', '+1');
+    assert.equal(withPlus.countryCode, '+254');
+    assert.equal(withPlus.nationalNumber, '712345678');
+
+    const withCodeNoPlus = splitPhoneNumber('254712345678', '+254');
+    assert.equal(withCodeNoPlus.countryCode, '+254');
+    assert.equal(withCodeNoPlus.nationalNumber, '712345678');
+
+    const nationalOnly = splitPhoneNumber('0712 345 678', '+254');
+    assert.equal(nationalOnly.countryCode, '+254');
+    assert.equal(nationalOnly.nationalNumber, '0712 345 678');
+
+    const telUrl = splitPhoneNumber('tel:+447911123456', '+1');
+    assert.equal(telUrl.countryCode, '+44');
+    assert.equal(telUrl.nationalNumber, '7911123456');
   });
 
   await t.test('ensureHttps prepends https if missing', () => {

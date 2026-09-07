@@ -419,9 +419,10 @@ function SignupForm() {
                       : 'border-zinc-200 focus-within:border-black focus-within:ring-1 focus-within:ring-black'
                   }`}
                 >
-                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-3.5 py-3 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
-                    <Globe size={13} className="text-zinc-400" />
-                    <span>{APP_DOMAIN}/</span>
+                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-2.5 sm:px-3.5 py-3 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
+                    <Globe size={13} className="text-zinc-400 shrink-0" />
+                    <span className="sm:hidden">bio/</span>
+                    <span className="hidden sm:inline">{APP_DOMAIN}/</span>
                   </span>
                   <input
                     type="text"
@@ -429,7 +430,7 @@ function SignupForm() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="w-full py-3 px-3 text-xs font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:outline-none"
+                    className="w-full py-3 px-3 text-sm font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:outline-none"
                   />
                   {userStatus === 'checking' && (
                     <div className="pr-3 text-zinc-400">
@@ -452,7 +453,10 @@ function SignupForm() {
                 <div className="mt-2 flex items-center justify-between gap-2 px-3 py-1.5 rounded-[8px] bg-zinc-100/70 border border-zinc-200/80 text-[11px]">
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Live URL:</span>
-                    <span className="font-mono text-zinc-500 truncate">{APP_DOMAIN}/</span>
+                    <span className="font-mono text-zinc-500 truncate">
+                      <span className="sm:hidden">bio/</span>
+                      <span className="hidden sm:inline">{APP_DOMAIN}/</span>
+                    </span>
                     <span className="font-mono font-black text-black truncate">{username || 'amelie'}</span>
                   </div>
                   {userStatus?.available === true && (
@@ -463,8 +467,8 @@ function SignupForm() {
                 </div>
               </div>
 
-              {/* 2. Creator Name */}
-              <div>
+              {/* 2. Creator Name (Desktop only) */}
+              <div className="hidden lg:block">
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1">
                   Your creator / brand name
                 </label>
@@ -477,8 +481,8 @@ function SignupForm() {
                 />
               </div>
 
-              {/* 3. Choose Vibe */}
-              <div>
+              {/* 3. Choose Vibe (Desktop only) */}
+              <div className="hidden lg:block">
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
                   Choose your vibe
                 </label>
