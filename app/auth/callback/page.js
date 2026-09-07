@@ -89,6 +89,15 @@ export default function AuthCallbackPage() {
           .maybeSingle();
 
         if (existingProfile) {
+          const hasPasswordSet = existingProfile?.socials?._password_set === true;
+          const promptDismissed = existingProfile?.socials?._password_prompt_dismissed === true;
+
+          // Only prompt for password if never set and never dismissed
+          if (isGoogleAuth && !hasPasswordSet && !promptDismissed) {
+            router.push('/set-password');
+            return;
+          }
+
           router.push(existingProfile.onboarded ? '/dashboard' : '/onboarding');
           return;
         }
@@ -119,11 +128,13 @@ export default function AuthCallbackPage() {
             id: user.id,
             username,
             display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || base,
-            avatar_url: user.user_metadata?.avatar_url || '',
-            theme: user.user_metadata?.theme || 'growth',
-            onboarded: true,
+            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+            theme: user.user_metadata?.theme || 'Classic Monochrome',
+            onboarded: false,
             socials: {
               _google_signup: isGoogleAuth,
+              _password_set: false,
+              _password_prompt_dismissed: false,
             },
           });
 
@@ -134,7 +145,12 @@ export default function AuthCallbackPage() {
           username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
         }
 
-        router.push('/dashboard');
+        // First time Google signup: prompt to set password once, then continue to onboarding
+        if (isGoogleAuth) {
+          router.push('/set-password');
+        } else {
+          router.push('/onboarding');
+        }
       } catch (err) {
         console.error('[auth/callback] Unexpected error:', err);
         setError('Sign in encountered an issue. Redirecting to login...');

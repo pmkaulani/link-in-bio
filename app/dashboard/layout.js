@@ -396,7 +396,7 @@ export default function DashboardLayout({ children }) {
           .eq('id', data.session.user.id)
           .maybeSingle();
 
-        if (p && p.onboarded === false) {
+        if (!p || p.onboarded === false) {
           router.push('/onboarding');
           return;
         }

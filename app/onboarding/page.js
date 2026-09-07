@@ -135,6 +135,7 @@ export default function OnboardingPage() {
         return;
       }
       setUserId(data.session.user.id);
+      const uMeta = data.session.user.user_metadata || {};
       const { data: p } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).maybeSingle();
       if (p) {
         if (p.onboarded) {
@@ -143,9 +144,12 @@ export default function OnboardingPage() {
         }
         setUsername(p.username || '');
         setOriginalUsername(p.username || '');
-        setDisplayName(p.display_name || p.username || '');
+        setDisplayName(p.display_name || uMeta.full_name || uMeta.name || p.username || '');
         setBio(p.bio || '');
-        setAvatarUrl(p.avatar_url || '');
+        setAvatarUrl(p.avatar_url || uMeta.avatar_url || uMeta.picture || '');
+      } else {
+        setDisplayName(uMeta.full_name || uMeta.name || '');
+        setAvatarUrl(uMeta.avatar_url || uMeta.picture || '');
       }
       setLoading(false);
     });
@@ -757,19 +761,39 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Copy Public Link Pill */}
+            {/* Interactive Public Link Pill */}
             <div className="flex items-center justify-between gap-2 w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-2 shadow-sm">
-              <span className="font-mono text-xs font-bold text-zinc-600 truncate pl-2">
-                {APP_DOMAIN}/{username || 'you'}
-              </span>
               <button
                 type="button"
                 onClick={copyPublicLink}
-                className="flex items-center gap-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition shrink-0"
+                className="flex items-center gap-1.5 min-w-0 flex-1 text-left px-2 py-1 rounded-lg hover:bg-zinc-50 transition"
+                title="Tap to copy link"
               >
-                {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
-                <span>{copied ? 'Copied!' : 'Copy'}</span>
+                <Globe size={13} className="text-zinc-400 shrink-0" />
+                <span className="font-mono text-xs font-bold text-zinc-700 truncate">
+                  {APP_DOMAIN}/{username || 'you'}
+                </span>
               </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={copyPublicLink}
+                  className="flex items-center gap-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition"
+                  title="Copy link to clipboard"
+                >
+                  {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                  <span>{copied ? 'Copied!' : 'Copy'}</span>
+                </button>
+                <a
+                  href={`/${username || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-black transition"
+                  title="Open preview in new tab"
+                >
+                  <ExternalLink size={14} />
+                </a>
+              </div>
             </div>
           </div>
         )}

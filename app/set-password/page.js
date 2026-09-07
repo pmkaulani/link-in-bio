@@ -40,12 +40,12 @@ export default function SetPasswordPage() {
       // Check if user already set password or dismissed prompt
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, socials')
+        .select('id, onboarded, socials')
         .eq('id', currentUser.id)
         .maybeSingle();
 
       if (profile?.socials?._password_set || profile?.socials?._password_prompt_dismissed) {
-        router.push('/dashboard');
+        router.push(profile?.onboarded ? '/dashboard' : '/onboarding');
         return;
       }
 
@@ -90,13 +90,15 @@ export default function SetPasswordPage() {
       }
 
       // Record _password_set: true so user is never prompted again
+      let isOnboarded = false;
       if (user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('socials')
+          .select('id, onboarded, socials')
           .eq('id', user.id)
           .maybeSingle();
 
+        isOnboarded = profile?.onboarded === true;
         const updatedSocials = {
           ...(profile?.socials || {}),
           _password_set: true,
@@ -108,7 +110,7 @@ export default function SetPasswordPage() {
           .eq('id', user.id);
       }
 
-      router.push('/dashboard');
+      router.push(isOnboarded ? '/dashboard' : '/onboarding');
     } catch (err) {
       setError(err?.message || 'Failed to set password. Please try again.');
       setSaving(false);
@@ -120,13 +122,15 @@ export default function SetPasswordPage() {
     setError('');
 
     try {
+      let isOnboarded = false;
       if (user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('socials')
+          .select('id, onboarded, socials')
           .eq('id', user.id)
           .maybeSingle();
 
+        isOnboarded = profile?.onboarded === true;
         const updatedSocials = {
           ...(profile?.socials || {}),
           _password_prompt_dismissed: true,
@@ -138,9 +142,9 @@ export default function SetPasswordPage() {
           .eq('id', user.id);
       }
 
-      router.push('/dashboard');
+      router.push(isOnboarded ? '/dashboard' : '/onboarding');
     } catch {
-      router.push('/dashboard');
+      router.push('/onboarding');
     }
   }
 
