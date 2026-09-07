@@ -10,6 +10,7 @@ import {
   Check,
   Camera,
   Trash2,
+  Globe,
   Upload,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
