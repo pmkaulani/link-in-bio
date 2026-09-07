@@ -120,11 +120,14 @@ function PreviewLink({ data, profile, isSelected }) {
       className={`group relative flex w-full items-center gap-3 overflow-hidden px-4 py-3.5 transition-all duration-200 ${extraClass} ${animation} ${hover}`}
       style={{ borderRadius: `${buttonRadius}px`, background: linkBg, color: buttonText }}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/5" style={{ color: data.is_featured ? '#ffffff' : icon.color }}>
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+        style={{ background: icon.color, color: '#ffffff' }}
+      >
         {data.thumbnail_url ? (
           <img src={data.thumbnail_url} alt="" className="h-full w-full object-cover rounded-full" />
         ) : (
-          <SocialIcon name={icon.className} className="text-lg" />
+          <SocialIcon name={icon.className} className="text-base" />
         )}
       </span>
       <span className="min-w-0 flex-1 text-left">

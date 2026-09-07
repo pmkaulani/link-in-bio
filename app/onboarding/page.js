@@ -364,13 +364,21 @@ export default function OnboardingPage() {
     button_style: theme.button_style || (selectedLook === 'retro' ? 'hard_shadow' : 'fill'),
     button_radius: theme.button_radius ?? (selectedLook === 'retro' ? 8 : 24),
     font_family: theme.font_family || 'inter',
-    font: theme.font || 'inter',
     socials: {
       _visible: false,
     },
   }), [username, displayName, bio, avatarUrl, theme, bgEffect, selectedLook]);
 
   const previewBlocks = useMemo(() => {
+    // Per-look card colors — primary_color can't be used because Studio Dark's is #FFFFFF
+    const LOOK_CARD = {
+      minimal: { bg: '#18181B', text: '#ffffff' },
+      bold:    { bg: '#3F3F46', text: '#ffffff' },
+      glow:    { bg: 'rgba(255,255,255,0.15)', text: '#ffffff' },
+      retro:   { bg: '#ffffff', text: '#000000' },
+    };
+    const card = LOOK_CARD[selectedLook] || LOOK_CARD.minimal;
+
     return Object.entries(selectedSocials).map(([icon, url], i) => {
       const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
       return {
@@ -385,13 +393,13 @@ export default function OnboardingPage() {
           animation: 'slideUp',
           hover_effect: hoverEffect,
           background_type: 'solid',
-          background_value: selectedLook === 'retro' ? '#ffffff' : (theme.primary_color || '#000000'),
-          text_color: selectedLook === 'retro' ? '#000000' : '#ffffff',
-          is_featured: i === 0,
+          background_value: card.bg,
+          text_color: card.text,
+          is_featured: false,
         },
       };
     });
-  }, [selectedSocials, hoverEffect, theme, selectedLook]);
+  }, [selectedSocials, hoverEffect, selectedLook]);
 
 
   if (loading) {
