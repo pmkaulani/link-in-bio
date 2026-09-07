@@ -712,9 +712,9 @@ export default function OnboardingPage() {
 
         {/* ================= STEP 3: GO LIVE ================= */}
         {step === 3 && (
-          <div className="flex flex-col items-center gap-6 text-center animate-profile-in">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
-              <Check size={28} strokeWidth={2.5} />
+          <div className="flex flex-col items-center gap-5 text-center animate-profile-in">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
+              <Check size={24} strokeWidth={2.5} />
             </div>
 
             <div>
@@ -722,61 +722,140 @@ export default function OnboardingPage() {
               <p className="mt-1 text-xs text-zinc-500">Here is how visitors will see your public bio link.</p>
             </div>
 
-            {/* Interactive Live Mini Card Preview */}
-            <div
-              className="w-full max-w-sm rounded-2xl p-5 shadow-lg border border-zinc-200/80 transition-all text-left"
-              style={{
-                background: theme.background_value,
-                color: theme.text_color || '#FFFFFF',
-              }}
-            >
-              <div className="flex items-center gap-3">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Avatar"
-                    className="h-12 w-12 rounded-full border border-white/40 object-cover shadow-sm"
-                  />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white font-black text-sm shadow-sm">
-                    {(displayName || username || '?').slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <span className="block text-sm font-black truncate">{displayName || username || 'Your Name'}</span>
-                  <span className="block text-[11px] opacity-75 font-mono">@{username || 'handle'}</span>
+            {/* Interactive Live Smartphone Mockup */}
+            <div className="w-full max-w-[320px] rounded-[32px] p-2 bg-zinc-950 shadow-2xl ring-1 ring-zinc-800">
+              {/* Top Speaker / Camera Notch */}
+              <div className="flex justify-center pt-1 pb-2">
+                <div className="h-3 w-16 rounded-full bg-zinc-900 border border-zinc-800/80 flex items-center justify-end px-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
                 </div>
               </div>
 
-              {bio && <p className="mt-2.5 text-xs opacity-90 leading-relaxed">{bio}</p>}
-
-              {/* Sample link cards */}
-              <div className="mt-4 space-y-2">
-                {Object.keys(selectedSocials).slice(0, 3).map((icon) => {
-                  const meta = ICONS[icon] || { className: 'fa-solid fa-link', color: '#FFFFFF' };
-                  const social = QUICK_SOCIALS.find((s) => s.icon === icon);
-                  return (
+              {/* Screen Content */}
+              <div
+                className="w-full rounded-[24px] overflow-hidden p-4.5 transition-all text-left"
+                style={{
+                  background: theme.background_value,
+                  color: theme.text_color || '#111827',
+                  minHeight: '270px',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      className="h-12 w-12 rounded-full border-2 border-white/80 object-cover shadow-md shrink-0"
+                    />
+                  ) : (
                     <div
-                      key={icon}
-                      className="flex items-center justify-between rounded-xl p-2.5 text-xs font-bold shadow-sm"
+                      className="flex h-12 w-12 items-center justify-center rounded-full font-black text-sm shadow-md shrink-0"
                       style={{
-                        background: selectedLook === 'minimal' ? '#000000' : 'rgba(255,255,255,0.15)',
-                        color: '#FFFFFF',
+                        background: selectedLook === 'retro' ? '#000000' : '#18181B',
+                        color: selectedLook === 'retro' ? '#FEF08A' : '#FFFFFF',
+                        border: '2px solid rgba(255,255,255,0.6)',
                       }}
                     >
-                      <div className="flex items-center gap-2">
-                        <i className={meta.className} />
-                        <span>{social?.title || icon}</span>
-                      </div>
-                      <ExternalLink size={12} className="opacity-60" />
+                      {(displayName || username || '?').slice(0, 2).toUpperCase()}
                     </div>
-                  );
-                })}
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-sm font-black truncate">{displayName || username || 'Your Name'}</span>
+                    <span className="block text-[11px] opacity-75 font-mono">@{username || 'handle'}</span>
+                  </div>
+                </div>
+
+                {bio && <p className="mt-2.5 text-xs opacity-90 leading-relaxed">{bio}</p>}
+
+                {/* Sample link cards */}
+                <div className="mt-4 space-y-2">
+                  {Object.keys(selectedSocials).length > 0 ? (
+                    Object.keys(selectedSocials).slice(0, 3).map((icon) => {
+                      const meta = ICONS[icon] || { className: 'fa-solid fa-link', color: '#18181B' };
+                      const social = QUICK_SOCIALS.find((s) => s.icon === icon);
+
+                      let pillBg = '#18181B';
+                      let pillTextColor = '#FFFFFF';
+                      let pillBorder = 'none';
+                      let pillShadow = '0 1px 3px rgba(0,0,0,0.12)';
+                      let iconBoxBg = 'rgba(255,255,255,0.12)';
+                      let iconColor = meta.color || '#FFFFFF';
+
+                      if (selectedLook === 'retro') {
+                        // Retro Pop: Neo-brutalist solid black card with yellow pop and crisp contrast
+                        pillBg = '#000000';
+                        pillTextColor = '#FFFFFF';
+                        pillBorder = '2px solid #000000';
+                        pillShadow = '3px 3px 0px 0px #000000';
+                        iconBoxBg = '#FEF08A';
+                        iconColor = '#000000';
+                      } else if (selectedLook === 'bold') {
+                        // Studio Dark: Dark zinc card with clean border
+                        pillBg = '#27272A';
+                        pillTextColor = '#FFFFFF';
+                        pillBorder = '1px solid rgba(255,255,255,0.12)';
+                        pillShadow = '0 2px 4px rgba(0,0,0,0.4)';
+                        iconBoxBg = 'rgba(255,255,255,0.08)';
+                        iconColor = '#FFFFFF';
+                      } else if (selectedLook === 'glow') {
+                        // Aurora Glow: Frosted glass card with luminous border
+                        pillBg = 'rgba(255, 255, 255, 0.16)';
+                        pillTextColor = '#FFFFFF';
+                        pillBorder = '1px solid rgba(255, 255, 255, 0.28)';
+                        pillShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                        iconBoxBg = 'rgba(255,255,255,0.12)';
+                        iconColor = '#FFFFFF';
+                      } else {
+                        // Minimal: Solid monochrome card
+                        pillBg = '#18181B';
+                        pillTextColor = '#FFFFFF';
+                        pillBorder = '1px solid rgba(0,0,0,0.08)';
+                        pillShadow = '0 2px 4px rgba(0,0,0,0.12)';
+                        iconBoxBg = 'rgba(255,255,255,0.12)';
+                        iconColor = '#FFFFFF';
+                      }
+
+                      return (
+                        <div
+                          key={icon}
+                          className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition-all"
+                          style={{
+                            background: pillBg,
+                            color: pillTextColor,
+                            border: pillBorder,
+                            boxShadow: pillShadow,
+                          }}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                              style={{ background: iconBoxBg }}
+                            >
+                              <i className={meta.className} style={{ color: iconColor, fontSize: '11px' }} />
+                            </div>
+                            <span className="truncate">{social?.title || icon}</span>
+                          </div>
+                          <ExternalLink size={12} style={{ opacity: 0.7 }} />
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div
+                      className="rounded-xl p-3 text-center text-xs font-semibold"
+                      style={{
+                        background: selectedLook === 'retro' ? '#000000' : 'rgba(0,0,0,0.08)',
+                        color: selectedLook === 'retro' ? '#FFFFFF' : 'inherit',
+                      }}
+                    >
+                      <span>No links added yet</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Interactive Public Link Pill */}
-            <div className="flex items-center justify-between gap-2 w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-2 shadow-sm">
+            <div className="flex items-center justify-between gap-2 w-full max-w-[320px] rounded-xl border border-zinc-200 bg-white p-2 shadow-sm">
               <button
                 type="button"
                 onClick={copyPublicLink}
