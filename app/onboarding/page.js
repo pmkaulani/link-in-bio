@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, isLocalMode } from '../../lib/supabase';
 import { THEME_PRESETS, QUICK_SOCIALS } from '../../lib/presets';
 import { ICONS } from '../../lib/icons';
 import {
@@ -10,11 +10,11 @@ import {
   Check,
   Sparkles,
   PartyPopper,
-  QrCode,
-  BarChart2,
-  Clock,
-  Layers,
-  Smartphone,
+  Camera,
+  Trash2,
+  Copy,
+  ExternalLink,
+  Globe,
   Upload,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
@@ -22,93 +22,57 @@ import { APP_DOMAIN } from '../../lib/constants';
 import { compressAvatarImage } from '../../lib/imageUtils';
 
 const STEPS = [
-  { label: 'You', desc: 'Identity & handle' },
-  { label: 'Your Links', desc: 'Socials & content' },
-  { label: 'Make it yours', desc: 'Pick a starter look' },
-  { label: 'Go Live', desc: 'Launch your page' },
+  { label: 'Profile', desc: 'Handle & Identity' },
+  { label: 'Links', desc: 'Socials & Drops' },
+  { label: 'Style', desc: 'Starter Look' },
+  { label: 'Launch', desc: 'Ready to Share' },
 ];
 
-// Pre-bundled starter looks — each one is a single click that sets theme + bg_effect + hover_effect
 const STARTER_LOOKS = [
   {
     id: 'minimal',
     name: 'Minimal',
-    desc: 'Clean white canvas, simple elevation',
+    desc: 'Clean white studio',
     theme: THEME_PRESETS.find((t) => t.name === 'Classic Monochrome') || THEME_PRESETS[0],
     bgEffect: 'none',
     hoverEffect: 'lift',
+    pillBg: '#18181B',
+    pillColor: '#FFFFFF',
   },
   {
     id: 'bold',
-    name: 'Bold',
-    desc: 'Pure black studio, spotlight cards',
+    name: 'Studio Dark',
+    desc: 'Deep obsidian stealth',
     theme: THEME_PRESETS.find((t) => t.name === 'Studio Dark') || THEME_PRESETS[2],
     bgEffect: 'none',
     hoverEffect: 'spotlight',
+    pillBg: '#27272A',
+    pillColor: '#FFFFFF',
   },
   {
     id: 'glow',
-    name: 'Glow',
-    desc: 'Aurora gradient with beam borders',
+    name: 'Aurora Glow',
+    desc: 'Midnight cosmic vibe',
     theme: THEME_PRESETS.find((t) => t.name === 'Midnight Aurora') || THEME_PRESETS[1],
     bgEffect: 'aurora',
     hoverEffect: 'border_beam',
+    pillBg: 'rgba(255,255,255,0.15)',
+    pillColor: '#FFFFFF',
   },
   {
     id: 'retro',
-    name: 'Retro',
-    desc: 'Yellow pop with blueprint grid',
-    theme: THEME_PRESETS.find((t) => t.name === 'Retro Pop') || THEME_PRESETS[13],
+    name: 'Retro Pop',
+    desc: 'Sun yellow neo-brutalist',
+    theme: THEME_PRESETS.find((t) => t.name === 'Retro Pop') || THEME_PRESETS[13] || THEME_PRESETS[0],
     bgEffect: 'grid_warp',
     hoverEffect: 'lift',
+    pillBg: '#000000',
+    pillColor: '#FEF08A',
   },
 ];
 
-
-
-function Stepper({ currentStep }) {
-  return (
-    <div className="mb-8 w-full max-w-xl mx-auto">
-      <div className="flex items-center justify-between">
-        {STEPS.map((s, i) => {
-          const active = i === currentStep;
-          const completed = i < currentStep;
-          return (
-            <div key={s.label} className="flex flex-1 items-center last:flex-none">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                    completed
-                      ? 'bg-black text-white'
-                      : active
-                      ? 'bg-black text-white shadow-sm ring-4 ring-zinc-100'
-                      : 'bg-zinc-100 text-zinc-400'
-                  }`}
-                >
-                  {completed ? <Check size={14} strokeWidth={2.5} /> : i + 1}
-                </div>
-                <span
-                  className={`mt-1.5 hidden text-[11px] font-bold tracking-tight sm:block ${
-                    active ? 'text-black' : 'text-zinc-400'
-                  }`}
-                >
-                  {s.label}
-                </span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`mx-2 h-0.5 flex-1 rounded-full transition-all ${
-                    i < currentStep ? 'bg-black' : 'bg-zinc-200'
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// Popular priority platforms for the mobile quick-select
+const POPULAR_PLATFORMS = ['instagram', 'tiktok', 'youtube', 'twitter', 'spotify', 'whatsapp', 'github', 'store'];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -128,7 +92,7 @@ export default function OnboardingPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Theme & Effects data — defaults to Minimal starter look
+  // Theme data
   const [theme, setTheme] = useState(STARTER_LOOKS[0].theme);
   const [bgEffect, setBgEffect] = useState(STARTER_LOOKS[0].bgEffect);
   const [hoverEffect, setHoverEffect] = useState(STARTER_LOOKS[0].hoverEffect);
@@ -140,18 +104,38 @@ export default function OnboardingPage() {
     youtube: 'https://youtube.com/@',
   });
 
+  // Copy feedback state for Step 3
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      // Local demo mode: seed initial values if available
+      try {
+        const localDb = localStorage.getItem('local_supabase_db');
+        if (localDb) {
+          const parsed = JSON.parse(localDb);
+          const p = parsed.profiles?.[0];
+          if (p) {
+            setUserId(p.id || 'local-test-id');
+            setUsername(p.username || '');
+            setOriginalUsername(p.username || '');
+            setDisplayName(p.display_name || p.username || '');
+            setBio(p.bio || '');
+            setAvatarUrl(p.avatar_url || '');
+          }
+        }
+      } catch (_) {}
       setLoading(false);
       return;
     }
+
     supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) {
+      if (!data?.session) {
         router.push('/login');
         return;
       }
       setUserId(data.session.user.id);
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).single();
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).maybeSingle();
       if (p) {
         if (p.onboarded) {
           router.push('/dashboard');
@@ -177,28 +161,25 @@ export default function OnboardingPage() {
 
     setAvatarUploading(true);
     try {
-      // 1. Fast client-side downscaling & compression to 320x320 WebP (<25KB)
       const { dataUrl, file: compressedBlob } = await compressAvatarImage(file, 320, 0.82);
-
-      // 2. Show the compressed image IMMEDIATELY — no waiting for upload
       setAvatarUrl(dataUrl);
       setAvatarUploading(false);
 
-      // 3. Upload to Supabase storage in the background (non-blocking)
       if (isSupabaseConfigured && userId) {
         const path = `avatars/${userId}.webp`;
-        supabase.storage.from('avatars').upload(path, compressedBlob, {
-          contentType: 'image/webp',
-          upsert: true,
-        }).then(({ error }) => {
-          if (!error) {
-            const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-            // Silently swap to the permanent CDN URL once uploaded
-            setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
-          }
-        }).catch(() => {
-          // Silent fail — dataUrl fallback is already in use
-        });
+        supabase.storage
+          .from('avatars')
+          .upload(path, compressedBlob, {
+            contentType: 'image/webp',
+            upsert: true,
+          })
+          .then(({ error }) => {
+            if (!error) {
+              const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+              setAvatarUrl(urlData.publicUrl + '?t=' + Date.now());
+            }
+          })
+          .catch(() => {});
       }
     } catch {
       setAvatarUploading(false);
@@ -210,14 +191,25 @@ export default function OnboardingPage() {
   function toggleSocial(social) {
     setSelectedSocials((prev) => {
       const next = { ...prev };
-      if (social.icon in next) delete next[social.icon];
-      else next[social.icon] = social.urlPrefix;
+      if (social.icon in next) {
+        delete next[social.icon];
+      } else {
+        next[social.icon] = social.urlPrefix;
+      }
       return next;
     });
   }
 
   function updateSocialUrl(icon, url) {
     setSelectedSocials((prev) => ({ ...prev, [icon]: url }));
+  }
+
+  function removeSocial(icon) {
+    setSelectedSocials((prev) => {
+      const next = { ...prev };
+      delete next[icon];
+      return next;
+    });
   }
 
   function applyStarterLook(look) {
@@ -230,7 +222,11 @@ export default function OnboardingPage() {
   async function validateUsernameAndAdvance() {
     const clean = username.trim().toLowerCase().replace(/^@/, '');
     if (!clean) {
-      setUsernameError('Pick a username using letters, numbers, or underscores.');
+      setUsernameError('Please enter a username.');
+      return;
+    }
+    if (clean.length < 3) {
+      setUsernameError('Username must be at least 3 characters.');
       return;
     }
     if (clean === originalUsername || !isSupabaseConfigured) {
@@ -238,77 +234,118 @@ export default function OnboardingPage() {
       setStep(1);
       return;
     }
+
     setCheckingUsername(true);
     setUsernameError('');
 
-    const [{ data: taken }, { data: reserved }] = await Promise.all([
-      supabase.from('profiles').select('id').eq('username', clean).neq('id', userId).maybeSingle(),
-      supabase.from('reserved_usernames').select('username').eq('username', clean).maybeSingle(),
-    ]);
+    try {
+      const [{ data: taken }, { data: reserved }] = await Promise.all([
+        supabase.from('profiles').select('id').eq('username', clean).neq('id', userId).maybeSingle(),
+        supabase.from('reserved_usernames').select('username').eq('username', clean).maybeSingle(),
+      ]);
 
-    setCheckingUsername(false);
-    if (reserved) {
-      setUsernameError('This username is reserved by the platform. Please choose another.');
-      return;
+      if (reserved) {
+        setUsernameError('This handle is reserved by the platform.');
+        return;
+      }
+      if (taken) {
+        setUsernameError('This handle is already taken. Try another!');
+        return;
+      }
+
+      setUsername(clean);
+      setStep(1);
+    } catch {
+      setStep(1);
+    } finally {
+      setCheckingUsername(false);
     }
-    if (taken) {
-      setUsernameError('That username is already taken. Try another!');
-      return;
-    }
-    setUsername(clean);
-    setStep(1);
   }
 
   async function finish() {
     setSaving(true);
+    const activeUserId = userId || (isLocalMode ? 'local-test-id' : null);
 
-    if (isSupabaseConfigured && userId) {
-      await supabase
-        .from('profiles')
-        .update({
-          username,
-          display_name: displayName || username,
-          bio,
-          avatar_url: avatarUrl,
-          primary_color: theme.primary_color,
-          text_color: theme.text_color,
-          background_type: theme.background_type,
-          background_value: theme.background_value,
-          bg_effect: bgEffect,
-          onboarded: true,
-        })
-        .eq('id', userId);
+    if (activeUserId) {
+      try {
+        if (isSupabaseConfigured) {
+          await supabase
+            .from('profiles')
+            .update({
+              username: username || 'user',
+              display_name: displayName || username || 'Creator',
+              bio,
+              avatar_url: avatarUrl,
+              primary_color: theme.primary_color,
+              text_color: theme.text_color,
+              background_type: theme.background_type,
+              background_value: theme.background_value,
+              bg_effect: bgEffect,
+              onboarded: true,
+            })
+            .eq('id', activeUserId);
 
-      await Promise.all(
-        Object.entries(selectedSocials).map(([icon, url], i) => {
-          const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
-          return supabase.from('blocks').insert({
-            profile_id: userId,
-            type: 'link',
-            position: i,
-            data: {
-              title: meta?.title || icon,
-              icon,
-              url,
-              animation: 'slideUp',
-              hover_effect: hoverEffect,
-              background_type: 'solid',
-              background_value: '#000000',
-              text_color: '#ffffff',
-              is_featured: i === 0,
-            },
-          });
-        })
-      );
+          if (Object.keys(selectedSocials).length > 0) {
+            await Promise.all(
+              Object.entries(selectedSocials).map(([icon, url], i) => {
+                const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
+                return supabase.from('blocks').insert({
+                  profile_id: activeUserId,
+                  type: 'link',
+                  position: i,
+                  data: {
+                    title: meta?.title || icon,
+                    icon,
+                    url,
+                    animation: 'slideUp',
+                    hover_effect: hoverEffect,
+                    background_type: 'solid',
+                    background_value: '#000000',
+                    text_color: '#ffffff',
+                    is_featured: i === 0,
+                  },
+                });
+              })
+            );
+          }
+        } else {
+          // Local demo mode save
+          const localDb = localStorage.getItem('local_supabase_db');
+          if (localDb) {
+            const parsed = JSON.parse(localDb);
+            if (parsed.profiles?.[0]) {
+              parsed.profiles[0] = {
+                ...parsed.profiles[0],
+                username: username || parsed.profiles[0].username,
+                display_name: displayName || username || parsed.profiles[0].display_name,
+                bio,
+                avatar_url: avatarUrl,
+                primary_color: theme.primary_color,
+                text_color: theme.text_color,
+                background_type: theme.background_type,
+                background_value: theme.background_value,
+                bg_effect: bgEffect,
+                onboarded: true,
+              };
+              localStorage.setItem('local_supabase_db', JSON.stringify(parsed));
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error saving onboarding data:', err);
+      }
     }
 
     setSaving(false);
     router.push('/dashboard');
   }
 
-  const inputClass =
-    'w-full rounded-[8px] border border-zinc-200 bg-white px-4 py-3 text-xs font-semibold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none';
-  const labelClass = 'block text-[11px] font-bold uppercase tracking-wider text-zinc-500';
+  function copyPublicLink() {
+    const publicUrl = `https://${APP_DOMAIN}/${username || 'you'}`;
+    navigator.clipboard?.writeText(publicUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   if (loading) {
     return (
@@ -319,369 +356,507 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAFA] px-4 py-10 sm:px-6 text-black">
-      <div className="w-full max-w-xl">
-        {/* Brand Header */}
-        <div className="mb-6 flex items-center justify-center">
-          <BrandLogo size="md" variant="full" />
+    <main className="flex min-h-screen flex-col bg-[#FAFAFA] text-black">
+      {/* ── STICKY TOP HEADER & SEGMENTED PROGRESS ────────────────────────── */}
+      <header className="sticky top-0 z-30 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4 sm:px-6">
+          {/* Left: Back button or Logo */}
+          <div className="flex items-center gap-2">
+            {step > 0 && step < 3 ? (
+              <button
+                type="button"
+                onClick={() => setStep(step - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-600 hover:bg-zinc-100 hover:text-black transition"
+                aria-label="Previous step"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            ) : (
+              <BrandLogo size="sm" variant="mark" />
+            )}
+          </div>
+
+          {/* Center: Segmented Progress Bar */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1.5">
+              {STEPS.map((s, idx) => (
+                <div
+                  key={s.label}
+                  className={`h-1.5 w-7 sm:w-10 rounded-full transition-all duration-300 ${
+                    idx <= step ? 'bg-black' : 'bg-zinc-200'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+              Step {step + 1} of {STEPS.length} • {STEPS[step].label}
+            </span>
+          </div>
+
+          {/* Right: Quick Skip action */}
+          <div>
+            {step < 3 ? (
+              <button
+                type="button"
+                onClick={finish}
+                className="text-[11px] font-bold text-zinc-400 hover:text-black transition px-2 py-1 rounded"
+              >
+                Skip
+              </button>
+            ) : (
+              <div className="w-8" />
+            )}
+          </div>
         </div>
+      </header>
 
-        {/* Step Indicator */}
-        <Stepper currentStep={step} />
+      {/* ── SCROLLABLE BODY CONTENT (PADDING-BOTTOM FOR MOBILE ACTION BAR) ── */}
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pt-6 pb-28 sm:px-6 sm:pb-12">
+        {/* ================= STEP 0: PROFILE BASICS ================= */}
+        {step === 0 && (
+          <div className="flex flex-col gap-6 animate-profile-in">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">Claim your handle</h1>
+              <p className="mt-1 text-xs text-zinc-500">Pick your link URL and personal creator identity.</p>
+            </div>
 
-        {/* Card Container */}
-        <div className="py-6 sm:py-8">
-          {/* ================= STEP 0: YOU — PROFILE BASICS ================= */}
-          {step === 0 && (
-            <div className="flex flex-col gap-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black tracking-tight text-black">Claim your handle</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Choose your personal link URL and profile identity.
-                </p>
-              </div>
+            {/* Compact Mobile Avatar Picker */}
+            <div className="flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-3.5 shadow-sm">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFile}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="group relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-zinc-100 bg-zinc-100 transition focus:outline-none focus:ring-2 focus:ring-black"
+                title="Tap to upload profile photo"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-black text-zinc-400 group-hover:text-black">
+                    {(displayName || username || '?').slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                {/* Camera Badge Overlay */}
+                <span className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera size={18} className="text-white" />
+                </span>
+                {avatarUploading && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  </span>
+                )}
+              </button>
 
-              {/* Profile Photo Upload */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 rounded-[8px] bg-zinc-50 p-4 border border-zinc-200">
-                <div className="relative shrink-0">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="h-16 w-16 rounded-full border-2 border-white object-cover shadow-md" />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black text-lg font-black text-white shadow-md">
-                      {(displayName || username || '?').slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+              <div className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-black">Profile Photo</span>
+                <span className="block text-[11px] text-zinc-500 truncate mt-0.5">
+                  {avatarUrl ? 'Photo added • Tap to replace' : 'Tap to choose from camera roll'}
+                </span>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-black hover:underline"
+                  >
+                    <Upload size={12} /> {avatarUrl ? 'Change' : 'Upload photo'}
+                  </button>
                   {avatarUrl && (
                     <button
                       type="button"
                       onClick={() => setAvatarUrl('')}
-                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white border border-zinc-200 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50"
+                      className="text-[11px] font-bold text-red-500 hover:text-red-700"
                     >
-                      ×
+                      Remove
                     </button>
                   )}
                 </div>
-                <div className="flex-1 w-full space-y-2 text-center sm:text-left">
-                  <span className={labelClass}>Profile Photo</span>
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarFile}
-                    className="hidden"
-                  />
-                  {/* Upload button — primary action */}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={avatarUploading}
-                    className="flex items-center justify-center gap-2 w-full rounded-[8px] bg-black px-3 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800 active:scale-95 shadow-xs disabled:opacity-50"
-                  >
-                    {avatarUploading ? (
-                      <>
-                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-white shrink-0" />
-                        <span>Optimizing photo...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={14} className="shrink-0" />
-                        <span>{avatarUrl ? 'Change photo' : 'Upload from gallery'}</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-zinc-400 text-center sm:text-left">Auto-optimized WebP • Fast loading</p>
-                </div>
-              </div>
-
-              {/* Username Input */}
-              <div>
-                <span className={labelClass}>Username</span>
-                <div className="mt-1.5 flex items-center overflow-hidden rounded-[8px] border border-zinc-200 bg-white shadow-xs focus-within:border-black focus-within:ring-1 focus-within:ring-black">
-                  <span className="flex items-center gap-1.5 bg-zinc-100/90 border-r border-zinc-200 px-2.5 sm:px-3.5 py-3 text-xs font-mono font-bold text-zinc-500 select-none shrink-0">
-                    <Globe size={13} className="text-zinc-400 shrink-0" />
-                    <span className="sm:hidden">bio/</span>
-                    <span className="hidden sm:inline">{APP_DOMAIN}/</span>
-                  </span>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="amelie"
-                    className="w-full py-3 px-3 text-sm font-bold text-black focus:outline-none"
-                  />
-                </div>
-                {/* Live Preview pill */}
-                <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-[6px] bg-zinc-100/70 border border-zinc-200/80 text-[11px] text-zinc-500">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Your link:</span>
-                  <span className="font-mono text-zinc-500">
-                    <span className="sm:hidden">bio/</span>
-                    <span className="hidden sm:inline">{APP_DOMAIN}/</span>
-                  </span>
-                  <span className="font-mono font-black text-black">{username || 'amelie'}</span>
-                </div>
-                {usernameError && <p className="mt-1.5 text-xs font-bold text-red-600">{usernameError}</p>}
-              </div>
-
-              {/* Display Name */}
-              <div>
-                <span className={labelClass}>Display Name</span>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Amélie Poulain"
-                  className={`${inputClass} mt-1.5`}
-                />
-              </div>
-
-              {/* Bio */}
-              <div>
-                <span className={labelClass}>Bio</span>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={2}
-                  placeholder="Photographer, filmmaker & collector of little moments."
-                  className={`${inputClass} mt-1.5`}
-                />
               </div>
             </div>
-          )}
 
-          {/* ================= STEP 1: YOUR LINKS ================= */}
-          {step === 1 && (
-            <div className="flex flex-col gap-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black tracking-tight text-black">Add your starter links</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Select your active platforms to generate initial link cards.
-                </p>
+            {/* Handle / Username Field */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+                Your Link URL
+              </label>
+              <div className="flex items-center overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm focus-within:border-black focus-within:ring-2 focus-within:ring-black/10">
+                <span className="flex items-center gap-1 border-r border-zinc-200 bg-zinc-50 px-3 py-3 font-mono text-xs font-bold text-zinc-500 select-none shrink-0">
+                  <Globe size={13} className="text-zinc-400" />
+                  <span>{APP_DOMAIN}/</span>
+                </span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                    setUsernameError('');
+                  }}
+                  placeholder="yourname"
+                  className="min-h-[46px] w-full px-3 py-2.5 font-mono text-sm font-bold text-black placeholder:font-sans placeholder:font-normal placeholder:text-zinc-400 focus:outline-none"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
               </div>
+              {usernameError ? (
+                <p className="text-[11px] font-bold text-red-600 animate-pulse">{usernameError}</p>
+              ) : (
+                <p className="text-[10px] text-zinc-400">Letters, numbers, and underscores only.</p>
+              )}
+            </div>
 
-              {/* Social platform chips */}
-              <div className="flex flex-wrap gap-2">
-                {QUICK_SOCIALS.map((social) => {
-                  const meta = ICONS[social.icon];
-                  const active = social.icon in selectedSocials;
+            {/* Display Name */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Amélie Poulain"
+                className="min-h-[46px] w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-bold text-black placeholder:font-normal placeholder:text-zinc-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 shadow-sm"
+              />
+            </div>
+
+            {/* Short Bio */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+                Bio Note
+              </label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={2}
+                placeholder="Photographer, filmmaker & collector of little moments."
+                className="w-full rounded-xl border border-zinc-300 bg-white p-3 text-xs font-medium text-black placeholder:text-zinc-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 shadow-sm resize-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ================= STEP 1: STARTER LINKS ================= */}
+        {step === 1 && (
+          <div className="flex flex-col gap-6 animate-profile-in">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">Add your starter links</h1>
+              <p className="mt-1 text-xs text-zinc-500">Tap platforms to add them to your page.</p>
+            </div>
+
+            {/* Quick Platform Selector Grid (Responsive 4-column mobile chips) */}
+            <div>
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                Popular Platforms
+              </span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {POPULAR_PLATFORMS.map((icon) => {
+                  const social = QUICK_SOCIALS.find((s) => s.icon === icon);
+                  if (!social) return null;
+                  const meta = ICONS[social.icon] || { className: 'fa-solid fa-link', color: '#18181B' };
+                  const isSelected = social.icon in selectedSocials;
                   return (
                     <button
                       key={social.icon}
+                      type="button"
                       onClick={() => toggleSocial(social)}
-                      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
-                        active
+                      className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition active:scale-95 text-left ${
+                        isSelected
                           ? 'border-black bg-black text-white shadow-sm'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:border-black hover:text-black'
+                          : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400'
                       }`}
                     >
-                      <i className={meta.className} style={{ color: active ? '#ffffff' : meta.color }} />
-                      {social.title}
-                      {active ? <Check size={12} className="text-white" /> : <span className="text-zinc-400">+</span>}
+                      <i className={meta.className} style={{ color: isSelected ? '#FFFFFF' : meta.color }} />
+                      <span className="truncate flex-1">{social.title}</span>
+                      {isSelected ? <Check size={12} className="text-white shrink-0" /> : <span className="text-zinc-400">+</span>}
                     </button>
                   );
                 })}
               </div>
+            </div>
 
-              {/* Selected URL inputs */}
+            {/* Link Edit Rows */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  Configured Links ({Object.keys(selectedSocials).length})
+                </span>
+              </div>
+
               {Object.keys(selectedSocials).length > 0 ? (
-                <div className="flex flex-col gap-3 pt-1">
-                  {Object.entries(selectedSocials).map(([icon, url]) => {
-                    const meta = ICONS[icon] || ICONS.link || { className: 'fa-solid fa-link', color: '#000000' };
-                    const social = QUICK_SOCIALS.find((s) => s.icon === icon);
-                    return (
-                      <div key={icon}>
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                          <i className={meta.className} style={{ color: meta.color }} /> {social?.title || icon} URL
+                Object.entries(selectedSocials).map(([icon, url]) => {
+                  const meta = ICONS[icon] || ICONS.link || { className: 'fa-solid fa-link', color: '#18181B' };
+                  const social = QUICK_SOCIALS.find((s) => s.icon === icon);
+                  return (
+                    <div
+                      key={icon}
+                      className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white p-2.5 shadow-sm"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-50 border border-zinc-100">
+                        <i className={meta.className} style={{ color: meta.color }} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[10px] font-bold text-zinc-400 uppercase">
+                          {social?.title || icon}
                         </span>
                         <input
                           type="text"
                           value={url}
                           onChange={(e) => updateSocialUrl(icon, e.target.value)}
-                          className={`${inputClass} mt-1`}
+                          className="w-full font-mono text-xs font-semibold text-black focus:outline-none"
+                          placeholder="https://"
                         />
                       </div>
-                    );
-                  })}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => removeSocial(icon)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-red-600 transition shrink-0"
+                        title="Remove link"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })
               ) : (
-                <div className="rounded-[8px] border-2 border-dashed border-zinc-200 bg-zinc-50/80 p-6 text-center">
+                <div className="rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
                   <p className="text-xs font-semibold text-zinc-500">
-                    No links selected yet — click any platform above to add your first link!
+                    No links selected yet. Tap any platform above to add your first card!
                   </p>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ================= STEP 2: MAKE IT YOURS — STARTER LOOKS ================= */}
-          {step === 2 && (
-            <div className="flex flex-col gap-5">
-              <div className="text-center">
-                <h1 className="text-2xl font-black tracking-tight text-black">Make it yours</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Pick a starter look — you can customize everything in the dashboard later.
-                </p>
-              </div>
-
-              {/* Starter Look Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                {STARTER_LOOKS.map((look) => {
-                  const active = selectedLook === look.id;
-                  return (
-                    <button
-                      key={look.id}
-                      onClick={() => applyStarterLook(look)}
-                      className={`group relative flex flex-col justify-between rounded-[14px] p-4 text-left transition-all hover:-translate-y-0.5 ${
-                        active ? 'ring-2 ring-black ring-offset-2' : 'ring-1 ring-zinc-200'
-                      }`}
-                      style={{
-                        background: look.theme.background_value,
-                        color: look.theme.text_color || '#FFFFFF',
-                        minHeight: '110px',
-                      }}
-                    >
-                      <div>
-                        <span className="text-sm font-black block drop-shadow-sm">{look.name}</span>
-                        <span className="block text-[11px] opacity-75 mt-0.5 leading-snug">{look.desc}</span>
-                      </div>
-                      {active && (
-                        <span className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-black shadow-md">
-                          <Check size={13} strokeWidth={3} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Skip / Use Default — prominent, not buried */}
-              <button
-                type="button"
-                onClick={() => {
-                  applyStarterLook(STARTER_LOOKS[0]);
-                  setStep(3);
-                }}
-                className="w-full rounded-[8px] border border-zinc-300 bg-white py-3 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-black transition shadow-xs"
-              >
-                Skip, use default
-              </button>
+        {/* ================= STEP 2: STARTER LOOKS ================= */}
+        {step === 2 && (
+          <div className="flex flex-col gap-6 animate-profile-in">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">Pick a starter look</h1>
+              <p className="mt-1 text-xs text-zinc-500">
+                Tap a style preset. You can fine-tune colors, fonts, and card animations anytime.
+              </p>
             </div>
-          )}
 
-          {/* ================= STEP 3: GO LIVE — LAUNCH & FEATURE TOUR ================= */}
-          {step === 3 && (
-            <div className="flex flex-col items-center gap-5 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
-                <PartyPopper size={26} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-black">Your canvas is ready</h1>
-                <div className="mt-2.5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 shadow-2xs">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-mono text-zinc-400 font-semibold">{APP_DOMAIN}/</span>
-                  <span className="text-xs font-mono font-black text-black">{username || 'you'}</span>
+            <div className="grid grid-cols-2 gap-3">
+              {STARTER_LOOKS.map((look) => {
+                const active = selectedLook === look.id;
+                return (
+                  <button
+                    key={look.id}
+                    type="button"
+                    onClick={() => applyStarterLook(look)}
+                    className={`group relative flex flex-col justify-between rounded-2xl p-4 text-left transition-all active:scale-[0.98] ${
+                      active
+                        ? 'ring-2 ring-black ring-offset-2 shadow-md'
+                        : 'border border-zinc-200 hover:border-zinc-400 shadow-sm'
+                    }`}
+                    style={{
+                      background: look.theme.background_value,
+                      color: look.theme.text_color || '#FFFFFF',
+                      minHeight: '130px',
+                    }}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-black drop-shadow-sm">{look.name}</span>
+                        {active && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow-sm">
+                            <Check size={12} strokeWidth={3} />
+                          </span>
+                        )}
+                      </div>
+                      <span className="mt-1 block text-[11px] opacity-80 leading-snug">{look.desc}</span>
+                    </div>
+
+                    {/* Miniature simulated link pill */}
+                    <div
+                      className="mt-3 flex items-center justify-center rounded-lg py-1.5 px-3 text-[10px] font-bold shadow-sm"
+                      style={{ background: look.pillBg, color: look.pillColor }}
+                    >
+                      <span>Preview Link</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 text-xs text-zinc-600">
+              <span className="font-bold text-black">💡 Good to know:</span> Your starter look configures page atmosphere and card interactions. You get access to all 14+ themes, gradients, and custom CSS in your studio dashboard.
+            </div>
+          </div>
+        )}
+
+        {/* ================= STEP 3: GO LIVE ================= */}
+        {step === 3 && (
+          <div className="flex flex-col items-center gap-6 text-center animate-profile-in">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
+              <PartyPopper size={26} />
+            </div>
+
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">Your page is ready!</h1>
+              <p className="mt-1 text-xs text-zinc-500">Here is how visitors will see your public bio link.</p>
+            </div>
+
+            {/* Interactive Live Mini Card Preview */}
+            <div
+              className="w-full max-w-sm rounded-2xl p-5 shadow-lg border border-zinc-200/80 transition-all text-left"
+              style={{
+                background: theme.background_value,
+                color: theme.text_color || '#FFFFFF',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="h-12 w-12 rounded-full border border-white/40 object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white font-black text-sm shadow-sm">
+                    {(displayName || username || '?').slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="block text-sm font-black truncate">{displayName || username || 'Your Name'}</span>
+                  <span className="block text-[11px] opacity-75 font-mono">@{username || 'handle'}</span>
                 </div>
               </div>
 
-              {/* Quick Feature Highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-2">
-                {[
-                  { icon: Smartphone, title: 'Visual 2-Way Builder', desc: 'Click phone elements to edit instantly' },
-                  { icon: Layers, title: 'Rich Content Blocks', desc: 'Videos, images, callouts & post grids' },
-                  { icon: Sparkles, title: 'Theme Studio', desc: 'Full custom palettes, fonts & motion' },
-                  { icon: QrCode, title: 'QR Code Sharing', desc: 'Instant scannable code & direct link' },
-                  { icon: BarChart2, title: 'Traffic Analytics', desc: 'Track referrers and visitor devices' },
-                  { icon: Clock, title: 'Link Scheduling', desc: 'Timed drops and automated promo windows' },
-                ].map((feat) => {
-                  const Icon = feat.icon;
+              {bio && <p className="mt-2.5 text-xs opacity-90 leading-relaxed">{bio}</p>}
+
+              {/* Sample link cards */}
+              <div className="mt-4 space-y-2">
+                {Object.keys(selectedSocials).slice(0, 3).map((icon) => {
+                  const meta = ICONS[icon] || { className: 'fa-solid fa-link', color: '#FFFFFF' };
+                  const social = QUICK_SOCIALS.find((s) => s.icon === icon);
                   return (
                     <div
-                      key={feat.title}
-                      className="flex items-start gap-2.5 rounded-[8px] border border-zinc-200 bg-zinc-50/60 p-3"
+                      key={icon}
+                      className="flex items-center justify-between rounded-xl p-2.5 text-xs font-bold shadow-sm"
+                      style={{
+                        background: selectedLook === 'minimal' ? '#000000' : 'rgba(255,255,255,0.15)',
+                        color: '#FFFFFF',
+                      }}
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-white text-black shadow-xs border border-zinc-200">
-                        <Icon size={16} />
+                      <div className="flex items-center gap-2">
+                        <i className={meta.className} />
+                        <span>{social?.title || icon}</span>
                       </div>
-                      <div>
-                        <span className="block text-xs font-bold text-black">{feat.title}</span>
-                        <span className="block text-[11px] text-zinc-500">{feat.desc}</span>
-                      </div>
+                      <ExternalLink size={12} className="opacity-60" />
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          {/* ================= NAVIGATION FOOTER ================= */}
-          <div className="mt-8 flex items-center justify-between gap-3 border-t border-zinc-200 pt-5">
-            {step > 0 && step < 3 ? (
+            {/* Copy Public Link Pill */}
+            <div className="flex items-center justify-between gap-2 w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-2 shadow-sm">
+              <span className="font-mono text-xs font-bold text-zinc-600 truncate pl-2">
+                {APP_DOMAIN}/{username || 'you'}
+              </span>
               <button
                 type="button"
-                onClick={() => setStep(step - 1)}
-                className="flex items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-black"
+                onClick={copyPublicLink}
+                className="flex items-center gap-1 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition shrink-0"
               >
-                <ArrowLeft size={14} /> Back
+                {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                <span>{copied ? 'Copied!' : 'Copy'}</span>
               </button>
-            ) : (
-              <span />
-            )}
-
-            {step === 0 && (
-              <button
-                type="button"
-                onClick={validateUsernameAndAdvance}
-                disabled={checkingUsername}
-                className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-60"
-              >
-                {checkingUsername ? 'Checking...' : 'Continue'} <ArrowRight size={14} />
-              </button>
-            )}
-
-            {step === 1 && (
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800"
-              >
-                Continue <ArrowRight size={14} />
-              </button>
-            )}
-
-            {step === 2 && (
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="flex items-center gap-1.5 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800"
-              >
-                <Sparkles size={14} /> Preview My Page
-              </button>
-            )}
-
-            {step === 3 && (
-              <button
-                type="button"
-                onClick={finish}
-                disabled={saving}
-                className="ml-auto flex items-center gap-2 rounded-[8px] bg-black px-6 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60"
-              >
-                {saving ? 'Setting up...' : 'Launch Dashboard'} <ArrowRight size={15} />
-              </button>
-            )}
+            </div>
           </div>
-        </div>
-
-        {/* Skip Button */}
-        {step < 3 && (
-          <button
-            type="button"
-            onClick={finish}
-            className="mt-4 block w-full text-center text-xs font-semibold text-zinc-400 hover:text-black"
-          >
-            Skip walkthrough & open dashboard
-          </button>
         )}
       </div>
+
+      {/* ── STICKY THUMB-FRIENDLY BOTTOM ACTION BAR ──────────────────────── */}
+      <footer className="fixed bottom-0 inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 backdrop-blur-md p-3.5 sm:static sm:bg-transparent sm:border-0 sm:p-0 sm:pb-8">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
+          {step > 0 && step < 3 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition"
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
+
+          {step === 0 && (
+            <button
+              type="button"
+              onClick={validateUsernameAndAdvance}
+              disabled={checkingUsername}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50"
+            >
+              {checkingUsername ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Checking availability...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue</span>
+                  <ArrowRight size={15} />
+                </>
+              )}
+            </button>
+          )}
+
+          {step === 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
+            >
+              <span>Continue to Styling</span>
+              <ArrowRight size={15} />
+            </button>
+          )}
+
+          {step === 2 && (
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
+            >
+              <Sparkles size={15} />
+              <span>Preview My Live Page</span>
+              <ArrowRight size={15} />
+            </button>
+          )}
+
+          {step === 3 && (
+            <button
+              type="button"
+              onClick={finish}
+              disabled={saving}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Preparing workspace...</span>
+                </>
+              ) : (
+                <>
+                  <span>Enter Studio Dashboard</span>
+                  <ArrowRight size={15} />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </footer>
     </main>
   );
 }
+

@@ -32,6 +32,9 @@ pnpm-debug.log*
 Thumbs.db
 *.pem
 
+# Extracted archives & temporary folders
+link-in-bio-*
+
 # TypeScript Cache
 *.tsbuildinfo
 next-env.d.ts
