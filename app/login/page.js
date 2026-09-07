@@ -44,15 +44,7 @@ export default function LoginPage() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session) {
-        const userEmail = data.session.user?.email?.toLowerCase();
-        if (
-          userEmail === 'pmkaulani@gmail.com' ||
-          (process.env.NEXT_PUBLIC_ADMIN_EMAIL && userEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase())
-        ) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       }
     });
   }, [router]);
@@ -85,15 +77,7 @@ export default function LoginPage() {
       return;
     }
 
-    const cleanEmail = email?.toLowerCase()?.trim();
-    if (
-      cleanEmail === 'pmkaulani@gmail.com' ||
-      (process.env.NEXT_PUBLIC_ADMIN_EMAIL && cleanEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase())
-    ) {
-      router.push('/admin');
-    } else {
-      router.push('/dashboard');
-    }
+    router.push('/dashboard');
   }
 
   async function handleSetPassword() {

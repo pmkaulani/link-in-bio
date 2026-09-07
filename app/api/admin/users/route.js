@@ -127,8 +127,11 @@ export async function POST(req) {
       return NextResponse.json({ success: true, user: data });
     }
 
-    // 3. Delete user
+    // 3. Delete user (Superadmin only)
     if (action === 'delete_user') {
+      if (adminCheck.role !== 'superadmin') {
+        return NextResponse.json({ error: 'Forbidden: Superadmin role required to delete accounts.' }, { status: 403 });
+      }
       await supabase.from('blocks').delete().eq('profile_id', userId);
       await supabase.from('reports').delete().eq('reported_profile_id', userId);
       await supabase.from('analytics_events').delete().eq('profile_id', userId);

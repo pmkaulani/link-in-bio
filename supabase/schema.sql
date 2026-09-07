@@ -303,11 +303,41 @@ create policy "Owners can read their own analytics"
   on analytics_events for select using (auth.uid() = profile_id);
 
 -- ── Custom Domains Policies ──────────────────────────────────────────────────
--- Only the owner can select and manage their own domain row.
--- Verification tokens are NEVER exposed to anonymous public select.
+-- Only the owner can select and delete their own domain row.
+-- New custom domains must have verified = false on creation.
 drop policy if exists "Owners can manage their own custom domain" on custom_domains;
-create policy "Owners can manage their own custom domain"
-  on custom_domains for all using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
+drop policy if exists "Owners can read their own custom domain" on custom_domains;
+drop policy if exists "Owners can insert unverified custom domain" on custom_domains;
+drop policy if exists "Owners can delete their own custom domain" on custom_domains;
+
+create policy "Owners can read their own custom domain"
+  on custom_domains for select
+  using (auth.uid() = profile_id);
+
+create policy "Owners can insert unverified custom domain"
+  on custom_domains for insert
+  with check (auth.uid() = profile_id and verified = false);
+
+create policy "Owners can delete their own custom domain"
+  on custom_domains for delete
+  using (auth.uid() = profile_id);
+
+create or replace function check_domain_verification_integrity()
+returns trigger as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if new.verified is distinct from old.verified then
+      raise exception 'Security violation: Only automated DNS verification can alter domain verified status.';
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+drop trigger if exists enforce_domain_verification_integrity on custom_domains;
+create trigger enforce_domain_verification_integrity
+  before update on custom_domains
+  for each row execute function check_domain_verification_integrity();
 
 
 -- ── Secure Custom Domain Resolver Function (RPC) ─────────────────────────────
@@ -316,6 +346,7 @@ create or replace function resolve_custom_domain(p_domain text)
 returns table (username text)
 language plpgsql
 security definer
+set search_path = public, pg_temp
 as $$
 begin
   return query
@@ -380,3 +411,116 @@ create index if not exists audit_logs_created_idx on admin_audit_logs (created_a
 create index if not exists analytics_events_profile_idx on analytics_events (profile_id, created_at);
 create index if not exists analytics_events_block_idx on analytics_events (block_id);
 create index if not exists custom_domains_domain_idx on custom_domains (domain);
+
+-- ── Profile Security Triggers (SEC-04) ───────────────────────────────────────
+create or replace function check_profile_update_integrity()
+returns trigger as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if new.is_verified is distinct from old.is_verified then
+      raise exception 'Security violation: Only administrators can modify verification status.';
+    end if;
+    if new.account_status is distinct from old.account_status then
+      raise exception 'Security violation: Only administrators can modify account moderation status.';
+    end if;
+    if new.suspension_reason is distinct from old.suspension_reason then
+      raise exception 'Security violation: Only administrators can modify suspension reason.';
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+drop trigger if exists enforce_profile_update_integrity on profiles;
+create trigger enforce_profile_update_integrity
+  before update on profiles
+  for each row execute function check_profile_update_integrity();
+
+-- ── Blocks Moderation Security Trigger (SEC-05) ──────────────────────────────
+create or replace function check_block_moderation_integrity()
+returns trigger as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if new.is_disabled is distinct from old.is_disabled and old.is_disabled = true then
+      raise exception 'Security violation: Only administrators can re-enable moderated blocks.';
+    end if;
+    if new.moderation_reason is distinct from old.moderation_reason and old.moderation_reason is not null then
+      raise exception 'Security violation: Only administrators can modify block moderation reasons.';
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+drop trigger if exists enforce_block_moderation_integrity on blocks;
+create trigger enforce_block_moderation_integrity
+  before update on blocks
+  for each row execute function check_block_moderation_integrity();
+
+-- ── Storage Buckets & Policies (SEC-06) ──────────────────────────────────────
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/webp', 'image/jpeg', 'image/png'])
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 2097152,
+  allowed_mime_types = array['image/webp', 'image/jpeg', 'image/png'];
+
+alter table storage.objects enable row level security;
+
+drop policy if exists "Public Access to Avatars" on storage.objects;
+create policy "Public Access to Avatars"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists "Users can upload their own avatar" on storage.objects;
+create policy "Users can upload their own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and (storage.filename(name)) = (auth.uid()::text || '.webp')
+  );
+
+drop policy if exists "Users can update their own avatar" on storage.objects;
+create policy "Users can update their own avatar"
+  on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and (storage.filename(name)) = (auth.uid()::text || '.webp')
+  );
+
+drop policy if exists "Users can delete their own avatar" on storage.objects;
+create policy "Users can delete their own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and (storage.filename(name)) = (auth.uid()::text || '.webp')
+  );
+
+-- ── Reserved Usernames Database Trigger (SEC-08) ─────────────────────────────
+create or replace function check_reserved_username()
+returns trigger as $$
+declare
+  clean_username text;
+begin
+  clean_username := lower(trim(replace(new.username, '@', '')));
+  if exists (
+    select 1 from reserved_usernames
+    where lower(trim(username)) = clean_username
+  ) then
+    raise exception 'Security violation: Username "%" is reserved by the platform.', new.username;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public, pg_temp;
+
+drop trigger if exists enforce_reserved_username on profiles;
+create trigger enforce_reserved_username
+  before insert or update of username on profiles
+  for each row execute function check_reserved_username();
+
+-- ── Analytics Events Delete Policy (SEC-12) ──────────────────────────────────
+drop policy if exists "Owners can delete their own analytics" on analytics_events;
+create policy "Owners can delete their own analytics"
+  on analytics_events for delete
+  using (auth.uid() = profile_id);
+

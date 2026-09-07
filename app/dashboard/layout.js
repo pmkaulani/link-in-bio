@@ -41,16 +41,6 @@ function InnerLayout({ children }) {
     async function checkAdminStatus() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
-        const email = session.user.email?.toLowerCase();
-        if (
-          email === 'pmkaulani@gmail.com' ||
-          (process.env.NEXT_PUBLIC_ADMIN_EMAIL && email === process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase())
-        ) {
-          setIsAdmin(true);
-          return;
-        }
-
         const { data: adminRecord } = await supabase
           .from('platform_admins')
           .select('role')

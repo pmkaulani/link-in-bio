@@ -2,6 +2,7 @@ import { supabase, isLocalMode } from '../../lib/supabase';
 import PublicProfile from '../../components/themes/PublicProfile';
 import LocalPublicPage from '../../components/LocalPublicPage';
 import { notFound } from 'next/navigation';
+import { serializeJsonLd } from '../../lib/publicProfileUtils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -177,7 +178,7 @@ export default async function PublicPage({ params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(profileJsonLd) }}
       />
       <PublicProfile
         profile={{
@@ -186,7 +187,9 @@ export default async function PublicPage({ params }) {
           account_status: profile.account_status || 'active',
           publication_status: profile.publication_status || 'published',
           is_verified: profile.is_verified ?? effectiveProfile.is_verified,
-          socials: profile.socials ?? effectiveProfile.socials,
+          socials: profile.socials && typeof profile.socials === 'object'
+            ? Object.fromEntries(Object.entries(profile.socials).filter(([k]) => !k.startsWith('_')))
+            : (effectiveProfile.socials || {}),
         }}
         blocks={finalBlocks}
       />

@@ -228,7 +228,7 @@ export default function OnboardingPage() {
   }
 
   async function validateUsernameAndAdvance() {
-    const clean = username.trim().toLowerCase();
+    const clean = username.trim().toLowerCase().replace(/^@/, '');
     if (!clean) {
       setUsernameError('Pick a username using letters, numbers, or underscores.');
       return;
@@ -240,14 +240,18 @@ export default function OnboardingPage() {
     }
     setCheckingUsername(true);
     setUsernameError('');
-    const { data } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', clean)
-      .neq('id', userId)
-      .maybeSingle();
+
+    const [{ data: taken }, { data: reserved }] = await Promise.all([
+      supabase.from('profiles').select('id').eq('username', clean).neq('id', userId).maybeSingle(),
+      supabase.from('reserved_usernames').select('username').eq('username', clean).maybeSingle(),
+    ]);
+
     setCheckingUsername(false);
-    if (data) {
+    if (reserved) {
+      setUsernameError('This username is reserved by the platform. Please choose another.');
+      return;
+    }
+    if (taken) {
       setUsernameError('That username is already taken. Try another!');
       return;
     }

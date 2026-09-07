@@ -12,7 +12,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { ICONS } from '../../lib/icons';
-import { safeColor, resolvePageTextColor } from '../../lib/publicProfileUtils';
+import { safeColor, safeBackgroundUrl, resolvePageTextColor } from '../../lib/publicProfileUtils';
 import BackgroundEffects from '../themes/BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
@@ -63,7 +63,9 @@ function getBackground(profile) {
   const type = profile?.background_type || 'solid';
   const value = profile?.background_value || '#FFFFFF';
   if (type === 'image' && value) {
-    return { backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${value}")`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    const safeBg = safeBackgroundUrl(value);
+    if (!safeBg) return { background: '#FFFFFF' };
+    return { backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${safeBg}")`, backgroundSize: 'cover', backgroundPosition: 'center' };
   }
   if (type === 'solid') return { background: safeColor(value, '#FFFFFF') };
   if (type === 'gradient') return { background: value || 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #7c3aed 100%)' };

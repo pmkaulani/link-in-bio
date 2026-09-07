@@ -41,6 +41,10 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Unauthorized: Admin access required.' }, { status: 403 });
   }
 
+  if (adminCheck.role !== 'superadmin') {
+    return NextResponse.json({ error: 'Forbidden: Superadmin role required to modify platform settings.' }, { status: 403 });
+  }
+
   const supabase = createAdminClient();
 
   try {

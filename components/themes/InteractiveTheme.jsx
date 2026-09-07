@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ICONS } from '../../lib/icons';
+import { safeColor, safeBackgroundUrl } from '../../lib/publicProfileUtils';
 
 const FONT_MAP = {
   inter: 'Inter, ui-sans-serif, system-ui, sans-serif',
@@ -30,17 +31,15 @@ const HOVERS = {
   tilt: 'link-hover-tilt',
 };
 
-function safeColor(value, fallback) {
-  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
-}
-
 function getBackground(profile, activeLink) {
   const type = activeLink?.background_type || profile.background_type || 'gradient';
   const value = activeLink?.background_value || profile.background_value || '';
 
   if (type === 'image' && value) {
+    const safeBg = safeBackgroundUrl(value);
+    if (!safeBg) return { background: '#0f172a' };
     return {
-      backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${value}")`,
+      backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${safeBg}")`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };

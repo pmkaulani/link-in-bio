@@ -54,11 +54,6 @@ export default function AdminLayout({ children }) {
           return;
         }
 
-        const email = session.user?.email?.toLowerCase();
-        const isSuperAdminEmail =
-          email === 'pmkaulani@gmail.com' ||
-          (process.env.NEXT_PUBLIC_ADMIN_EMAIL && email === process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase());
-
         const { data: adminRecord, error } = await supabase
           .from('platform_admins')
           .select('role')
@@ -68,17 +63,6 @@ export default function AdminLayout({ children }) {
         if (adminRecord) {
           setIsAdmin(true);
           setAdminRole(adminRecord.role || 'admin');
-        } else if (isSuperAdminEmail) {
-          // Grant instant superadmin access
-          setIsAdmin(true);
-          setAdminRole('superadmin');
-          // Self-heal/register in platform_admins if needed
-          try {
-            await supabase.from('platform_admins').upsert(
-              { user_id: session.user.id, role: 'superadmin' },
-              { onConflict: 'user_id' }
-            );
-          } catch (_) {}
         } else {
           setIsAdmin(false);
         }

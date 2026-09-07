@@ -318,15 +318,15 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-6 text-black">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-black">Profile</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-black tracking-tight text-black whitespace-nowrap">Profile</h1>
             {hasUnpostedChanges ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-300 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 border border-zinc-300 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800 whitespace-nowrap shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
                 Draft profile
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-[11px] font-bold text-zinc-800 whitespace-nowrap shrink-0">
                 <Check size={12} className="text-black" />
                 Profile live
               </span>

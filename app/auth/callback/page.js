@@ -93,7 +93,6 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // 6. First time signing in / email confirmation — create initial profile
         const base = slugify(
           user.user_metadata?.username ||
           user.email?.split('@')[0] ||
@@ -101,6 +100,19 @@ export default function AuthCallbackPage() {
         );
         let username = base;
         let profileCreated = false;
+
+        // Check if candidate username is reserved by the platform
+        try {
+          const { data: reservedRec } = await supabase
+            .from('reserved_usernames')
+            .select('username')
+            .eq('username', username)
+            .maybeSingle();
+
+          if (reservedRec) {
+            username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+          }
+        } catch (_) {}
 
         for (let attempt = 0; attempt < 3; attempt++) {
           const { error: err } = await supabase.from('profiles').insert({

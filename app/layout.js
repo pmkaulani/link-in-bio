@@ -1,5 +1,6 @@
 import './globals.css';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { serializeJsonLd } from '../lib/publicProfileUtils';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -95,7 +96,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
         />
       </head>
       <body className="bg-white text-gray-900 font-sans antialiased">{children}</body>

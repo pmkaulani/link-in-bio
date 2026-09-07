@@ -257,16 +257,34 @@ export default function SettingsPage() {
     showToast('Display name updated.', 'success');
   }
 
-  function handleSaveEmail(e) {
+  async function handleSaveEmail(e) {
     e.preventDefault();
-    if (!newEmailInput || !newEmailInput.includes('@')) {
+    const clean = (newEmailInput || '').trim().toLowerCase();
+    if (!clean || !clean.includes('@') || !clean.includes('.')) {
       showToast('Please enter a valid email address.', 'error');
       return;
     }
-    setEmailInput(newEmailInput);
-    updateProfile({ email: newEmailInput });
-    setShowEmailModal(false);
-    showToast('Verification link sent to new email.', 'success');
+    if (clean === (emailInput || '').toLowerCase()) {
+      showToast('New email address is identical to your current email.', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.auth.updateUser({ email: clean });
+        if (error) throw error;
+        showToast('Confirmation email sent! Please check both your current and new inbox to confirm.', 'success');
+      } else {
+        setEmailInput(clean);
+        showToast('Email address updated (local demo mode).', 'success');
+      }
+      setShowEmailModal(false);
+    } catch (err) {
+      showToast(err.message || 'Failed to update email address.', 'error');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── 2. Security Handlers ───────────────────────────────────────────────────

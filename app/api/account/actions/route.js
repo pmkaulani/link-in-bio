@@ -4,6 +4,24 @@ import { createRequestClient } from '../../../../lib/supabaseServer';
 
 export const dynamic = 'force-dynamic';
 
+// Sliding-window rate limiter for password changes (5 attempts per 15 min per user/IP)
+const passwordChangeRateLimitMap = new Map();
+const PWD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const MAX_PWD_ATTEMPTS = 5;
+
+function isPasswordChangeRateLimited(key) {
+  if (!key) return false;
+  const now = Date.now();
+  const windowStart = now - PWD_RATE_LIMIT_WINDOW_MS;
+  const timestamps = (passwordChangeRateLimitMap.get(key) || []).filter((t) => t > windowStart);
+  if (timestamps.length >= MAX_PWD_ATTEMPTS) {
+    return true;
+  }
+  timestamps.push(now);
+  passwordChangeRateLimitMap.set(key, timestamps);
+  return false;
+}
+
 export async function POST(req) {
   try {
     // ── Auth gate: reject if no verified session ─────────────────────────
@@ -11,6 +29,7 @@ export async function POST(req) {
     const supabase = createRequestClient(authHeader);
 
     let userId = null;
+    let user = null;
 
     if (isLocalMode) {
       // In local development mode, check the local storage mock session
@@ -19,16 +38,18 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Unauthorized: Valid session required.' }, { status: 401 });
       }
       userId = session.user.id;
+      user = session.user;
     } else {
       // In production mode, require a verified JWT from the Authorization header
       if (!authHeader) {
         return NextResponse.json({ error: 'Unauthorized: Authorization header required.' }, { status: 401 });
       }
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      if (authError || !userData?.user) {
         return NextResponse.json({ error: 'Unauthorized: Invalid or expired session.' }, { status: 401 });
       }
-      userId = user.id;
+      userId = userData.user.id;
+      user = userData.user;
     }
 
     if (!userId) {
@@ -40,7 +61,16 @@ export async function POST(req) {
 
     // 1. Change Password
     if (action === 'change_password') {
-      const { newPassword } = body;
+      const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+      const rateLimitKey = `${userId}:${clientIp}`;
+      if (isPasswordChangeRateLimited(rateLimitKey)) {
+        return NextResponse.json(
+          { error: 'Too many password change attempts. Please wait 15 minutes before trying again.' },
+          { status: 429 }
+        );
+      }
+
+      const { oldPassword, newPassword } = body;
       const isValid =
         newPassword &&
         newPassword.length >= 8 &&
@@ -56,21 +86,52 @@ export async function POST(req) {
         );
       }
 
-      if (!isLocalMode) {
-        const { error } = await supabase.auth.updateUser({
-          password: newPassword,
-          data: { password_set: true },
-        });
-        if (error) throw error;
-      }
-
-      // Also persist _password_set: true in database profiles table
+      // Check whether user currently has a password set
       const { data: currentProfile } = await supabase
         .from('profiles')
         .select('socials')
         .eq('id', userId)
         .maybeSingle();
 
+      const hasExistingPassword = Boolean(
+        currentProfile?.socials?._password_set === true ||
+        user?.user_metadata?.password_set === true
+      );
+
+      if (hasExistingPassword) {
+        if (!oldPassword || typeof oldPassword !== 'string') {
+          return NextResponse.json(
+            { error: 'Current password is required to set a new password.' },
+            { status: 400 }
+          );
+        }
+
+        if (!isLocalMode && user?.email) {
+          const { error: reauthError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: oldPassword,
+          });
+
+          if (reauthError) {
+            return NextResponse.json(
+              { error: 'Incorrect current password.' },
+              { status: 400 }
+            );
+          }
+        }
+      }
+
+      if (!isLocalMode) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword,
+          data: { password_set: true },
+        });
+        if (updateError) {
+          return NextResponse.json({ error: 'Failed to update password.' }, { status: 400 });
+        }
+      }
+
+      // Also persist _password_set: true in database profiles table
       const updatedSocials = {
         ...(currentProfile?.socials || {}),
         _password_set: true,

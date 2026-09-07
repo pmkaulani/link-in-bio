@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ICONS } from '../../lib/icons';
 import { logPageView, logLinkClick } from '../../lib/analytics';
-import { safeHref, formatSocialHref, safeColor, isWithinSchedule, resolvePageTextColor } from '../../lib/publicProfileUtils';
+import { safeHref, formatSocialHref, safeColor, safeBackgroundUrl, isWithinSchedule, resolvePageTextColor } from '../../lib/publicProfileUtils';
 import BackgroundEffects from './BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
@@ -91,8 +91,10 @@ function getBackground(profile) {
   const type = profile?.background_type || 'solid';
   const value = profile?.background_value || '#FFFFFF';
   if (type === 'image' && value) {
+    const safeBg = safeBackgroundUrl(value);
+    if (!safeBg) return { background: '#FFFFFF' };
     return {
-      backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${value}")`,
+      backgroundImage: `linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)), url("${safeBg}")`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
