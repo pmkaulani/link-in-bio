@@ -17,7 +17,7 @@ import BackgroundEffects from '../themes/BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
 import { useDashboard } from '../../app/dashboard/DashboardContext';
-import { normalizeSocialAccounts, groupAccountsByPlatform } from '../../lib/socialAccounts';
+import { normalizeSocialAccounts, groupAccountsByPlatform, getBalancedSocialRows } from '../../lib/socialAccounts';
 
 const FONT_MAP = {
   inter: "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -256,28 +256,33 @@ function PreviewSocialsBar({ profile }) {
   const isSocialsVisible = profile?.socials?._visible !== false;
   const accounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
   const grouped = useMemo(() => groupAccountsByPlatform(accounts, { onlyVisible: true }), [accounts]);
-  if (!isSocialsVisible || Object.keys(grouped).length === 0) return null;
+  const rows = useMemo(() => getBalancedSocialRows(Object.entries(grouped)), [grouped]);
+  if (!isSocialsVisible || rows.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 my-1">
-      {Object.entries(grouped).map(([platform, accountList]) => {
-        const icon = ICONS[platform] || ICONS.link;
-        const hasMultiple = accountList.length > 1;
-        return (
-          <span
-            key={platform}
-            className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 backdrop-blur-md shadow-xs"
-            title={`${icon.label || platform} (${accountList.length} accounts)`}
-          >
-            <SocialIcon name={icon.className} style={{ color: icon.color, fontSize: 14 }} />
-            {hasMultiple && (
-              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
-                {accountList.length}
+    <div className="flex flex-col items-center gap-2 my-1">
+      {rows.map((row, rowIndex) => (
+        <div key={rowIndex} className="flex items-center justify-center gap-2">
+          {row.map(([platform, accountList]) => {
+            const icon = ICONS[platform] || ICONS.link;
+            const hasMultiple = accountList.length > 1;
+            return (
+              <span
+                key={platform}
+                className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 border border-current/15 backdrop-blur-md shadow-xs"
+                title={`${icon.label || platform} (${accountList.length} accounts)`}
+              >
+                <SocialIcon name={icon.className} style={{ color: icon.color, fontSize: 14 }} />
+                {hasMultiple && (
+                  <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
+                    {accountList.length}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-        );
-      })}
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -307,6 +312,7 @@ export default function LivePreview({ profile, blocks }) {
   const isSocialsVisible = profile?.socials?._visible !== false;
   const previewAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
   const previewGrouped = useMemo(() => groupAccountsByPlatform(previewAccounts, { onlyVisible: true }), [previewAccounts]);
+  const previewSocialRows = useMemo(() => getBalancedSocialRows(Object.entries(previewGrouped)), [previewGrouped]);
 
   const username = profile?.username || 'creator';
   const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${username}` : `/${username}`;
@@ -442,26 +448,30 @@ export default function LivePreview({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {isSocialsVisible && Object.keys(previewGrouped).length > 0 && (
-              <div className="mt-3.5 flex flex-wrap justify-center gap-2.5">
-                {Object.entries(previewGrouped).map(([platform, accountList]) => {
-                  const icon = ICONS[platform] || ICONS.link;
-                  const hasMultiple = accountList.length > 1;
-                  return (
-                    <span
-                      key={platform}
-                      className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm border border-white/10"
-                      title={`${icon.label || platform} (${accountList.length} accounts)`}
-                    >
-                      <SocialIcon name={icon.className} style={{ fontSize: 14 }} />
-                      {hasMultiple && (
-                        <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
-                          {accountList.length}
+            {isSocialsVisible && previewSocialRows.length > 0 && (
+              <div className="mt-3.5 flex flex-col items-center gap-2">
+                {previewSocialRows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex items-center justify-center gap-2.5">
+                    {row.map(([platform, accountList]) => {
+                      const icon = ICONS[platform] || ICONS.link;
+                      const hasMultiple = accountList.length > 1;
+                      return (
+                        <span
+                          key={platform}
+                          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-black text-white shadow-sm border border-white/10"
+                          title={`${icon.label || platform} (${accountList.length} accounts)`}
+                        >
+                          <SocialIcon name={icon.className} style={{ fontSize: 14 }} />
+                          {hasMultiple && (
+                            <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] px-0.5 items-center justify-center rounded-full bg-white text-black text-[8px] font-black shadow-xs border border-zinc-200">
+                              {accountList.length}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             )}
 

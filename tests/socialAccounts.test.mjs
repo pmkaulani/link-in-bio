@@ -6,6 +6,7 @@ import {
   groupAccountsByPlatform,
   formatAccountDisplay,
   createAccountId,
+  getBalancedSocialRows,
 } from '../lib/socialAccounts.js';
 
 test('Social Accounts Collection: Normalization & Migration', async (t) => {
@@ -141,3 +142,68 @@ test('Social Accounts: formatAccountDisplay', async (t) => {
     );
   });
 });
+
+test('Social Accounts: getBalancedSocialRows Row Balancing', async (t) => {
+  await t.test('returns empty array for empty or falsy input', () => {
+    assert.deepEqual(getBalancedSocialRows([]), []);
+    assert.deepEqual(getBalancedSocialRows(null), []);
+  });
+
+  await t.test('keeps up to 5 items in a single row', () => {
+    const items3 = ['a', 'b', 'c'];
+    assert.deepEqual(getBalancedSocialRows(items3), [['a', 'b', 'c']]);
+
+    const items5 = ['a', 'b', 'c', 'd', 'e'];
+    assert.deepEqual(getBalancedSocialRows(items5), [['a', 'b', 'c', 'd', 'e']]);
+  });
+
+  await t.test('balances 6 items into 2 rows of 3', () => {
+    const items = ['1', '2', '3', '4', '5', '6'];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows[0], ['1', '2', '3']);
+    assert.deepEqual(rows[1], ['4', '5', '6']);
+  });
+
+  await t.test('balances 7 items into rows of 4 and 3 (preventing orphan 1-item row)', () => {
+    const items = ['github', 'tiktok', 'spotify', 'x', 'youtube', 'instagram', 'whatsapp'];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows[0], ['github', 'tiktok', 'spotify', 'x']);
+    assert.deepEqual(rows[1], ['youtube', 'instagram', 'whatsapp']);
+  });
+
+  await t.test('balances 8 items into 2 rows of 4', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows[0], [1, 2, 3, 4]);
+    assert.deepEqual(rows[1], [5, 6, 7, 8]);
+  });
+
+  await t.test('balances 9 items into rows of 5 and 4', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows[0], [1, 2, 3, 4, 5]);
+    assert.deepEqual(rows[1], [6, 7, 8, 9]);
+  });
+
+  await t.test('balances 10 items into 2 rows of 5', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows[0], [1, 2, 3, 4, 5]);
+    assert.deepEqual(rows[1], [6, 7, 8, 9, 10]);
+  });
+
+  await t.test('balances 11 items into 3 rows (4, 4, 3)', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const rows = getBalancedSocialRows(items);
+    assert.equal(rows.length, 3);
+    assert.deepEqual(rows[0], [1, 2, 3, 4]);
+    assert.deepEqual(rows[1], [5, 6, 7, 8]);
+    assert.deepEqual(rows[2], [9, 10, 11]);
+  });
+});
+

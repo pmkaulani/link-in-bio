@@ -36,7 +36,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { APP_DOMAIN } from '../../lib/constants';
-import { normalizeSocialAccounts, groupAccountsByPlatform } from '../../lib/socialAccounts';
+import { normalizeSocialAccounts, groupAccountsByPlatform, getBalancedSocialRows } from '../../lib/socialAccounts';
 
 const FONT_MAP = {
   inter: "'Inter', ui-sans-serif, system-ui, sans-serif",
@@ -1374,6 +1374,7 @@ export default function PublicProfile({ profile, blocks }) {
   const socialAccounts = useMemo(() => normalizeSocialAccounts(profile || {}), [profile?.social_accounts, profile?.socials]);
   const isSocialsVisible = profile?.socials?._visible !== false;
   const groupedAccounts = useMemo(() => groupAccountsByPlatform(socialAccounts, { onlyVisible: true }), [socialAccounts]);
+  const socialRows = useMemo(() => getBalancedSocialRows(Object.entries(groupedAccounts)), [groupedAccounts]);
 
   const primary = safeColor(profile?.primary_color, '#000000');
   const text = resolvePageTextColor(profile || {});
@@ -1536,45 +1537,49 @@ export default function PublicProfile({ profile, blocks }) {
             )}
 
             {/* Persistent Social Media Icons (Linktree style circular buttons) */}
-            {isSocialsVisible && Object.keys(groupedAccounts).length > 0 && (
-              <div className="animate-profile-in mt-4 flex flex-wrap justify-center gap-3">
-                {Object.entries(groupedAccounts).map(([platform, accountList]) => {
-                  const icon = ICONS[platform] || ICONS.link;
-                  const hasMultiple = accountList.length > 1;
-                  const primaryAcc = accountList.find((a) => a.is_primary) || accountList[0];
+            {isSocialsVisible && socialRows.length > 0 && (
+              <div className="animate-profile-in mt-4 flex flex-col items-center gap-2.5">
+                {socialRows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex items-center justify-center gap-2.5 sm:gap-3">
+                    {row.map(([platform, accountList]) => {
+                      const icon = ICONS[platform] || ICONS.link;
+                      const hasMultiple = accountList.length > 1;
+                      const primaryAcc = accountList.find((a) => a.is_primary) || accountList[0];
 
-                  if (hasMultiple) {
-                    return (
-                      <button
-                        key={platform}
-                        type="button"
-                        onClick={() => setActiveMultiPlatform(platform)}
-                        className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
-                        aria-label={`${icon.label || platform} (${accountList.length} accounts)`}
-                        title={`${icon.label || platform} (${accountList.length} accounts)`}
-                      >
-                        <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
-                        <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-white text-black text-[9px] font-black shadow-md border border-zinc-200">
-                          {accountList.length}
-                        </span>
-                      </button>
-                    );
-                  }
+                      if (hasMultiple) {
+                        return (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => setActiveMultiPlatform(platform)}
+                            className="group relative flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
+                            aria-label={`${icon.label || platform} (${accountList.length} accounts)`}
+                            title={`${icon.label || platform} (${accountList.length} accounts)`}
+                          >
+                            <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
+                            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-white text-black text-[9px] font-black shadow-md border border-zinc-200">
+                              {accountList.length}
+                            </span>
+                          </button>
+                        );
+                      }
 
-                  return (
-                    <a
-                      key={platform}
-                      href={formatSocialHref(platform, primaryAcc.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
-                      aria-label={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
-                      title={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
-                    >
-                      <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
-                    </a>
-                  );
-                })}
+                      return (
+                        <a
+                          key={platform}
+                          href={formatSocialHref(platform, primaryAcc.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex h-11 w-11 items-center justify-center rounded-full bg-black/90 text-white shadow-md transition-all duration-200 hover:scale-115 hover:bg-black hover:shadow-lg active:scale-95 border border-white/10"
+                          aria-label={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
+                          title={primaryAcc.label ? `${icon.label || platform} · ${primaryAcc.label}` : (icon.label || platform)}
+                        >
+                          <SocialIcon name={icon.className} className="text-[20px] transition-transform duration-200 group-hover:scale-105" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             )}
 
