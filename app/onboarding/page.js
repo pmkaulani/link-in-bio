@@ -8,8 +8,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  Sparkles,
-  PartyPopper,
   Camera,
   Trash2,
   Copy,
@@ -364,31 +362,47 @@ export default function OnboardingPage() {
       {/* ── STICKY TOP HEADER & SEGMENTED PROGRESS ────────────────────────── */}
       <header className="sticky top-0 z-30 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4 sm:px-6">
-          {/* Left: Back button or Logo */}
+          {/* Left: Back button or Exit */}
           <div className="flex items-center gap-2">
-            {step > 0 && step < 3 ? (
+            {step > 0 ? (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-600 hover:bg-zinc-100 hover:text-black transition"
+                className="flex h-9 items-center gap-1.5 px-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 hover:text-black transition"
                 aria-label="Previous step"
               >
                 <ArrowLeft size={16} />
+                <span className="text-xs font-bold">Back</span>
               </button>
             ) : (
-              <BrandLogo size="sm" variant="mark" />
+              <button
+                type="button"
+                onClick={() => router.push('/login')}
+                className="flex items-center gap-1.5 py-1 px-1.5 rounded-lg text-zinc-400 hover:text-black transition"
+                title="Exit to login"
+              >
+                <ArrowLeft size={14} />
+                <BrandLogo size="sm" variant="mark" />
+              </button>
             )}
           </div>
 
-          {/* Center: Segmented Progress Bar */}
+          {/* Center: Segmented Progress Bar (clickable to jump back) */}
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-1.5">
               {STEPS.map((s, idx) => (
-                <div
+                <button
                   key={s.label}
+                  type="button"
+                  onClick={() => {
+                    if (idx < step) setStep(idx);
+                  }}
+                  disabled={idx >= step}
                   className={`h-1.5 w-7 sm:w-10 rounded-full transition-all duration-300 ${
                     idx <= step ? 'bg-black' : 'bg-zinc-200'
-                  }`}
+                  } ${idx < step ? 'cursor-pointer hover:opacity-75' : 'cursor-default'}`}
+                  title={idx < step ? `Back to ${s.label}` : s.label}
+                  aria-label={`Step ${idx + 1}: ${s.label}`}
                 />
               ))}
             </div>
@@ -691,7 +705,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-white p-4 text-xs text-zinc-600">
-              <span className="font-bold text-black">💡 Good to know:</span> Your starter look configures page atmosphere and card interactions. You get access to all 14+ themes, gradients, and custom CSS in your studio dashboard.
+              <span className="font-bold text-black">Note:</span> Your starter look configures page atmosphere and card interactions. You get access to all 14+ themes, gradients, and custom CSS in your studio dashboard.
             </div>
           </div>
         )}
@@ -700,7 +714,7 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="flex flex-col items-center gap-6 text-center animate-profile-in">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-white shadow-sm">
-              <PartyPopper size={26} />
+              <Check size={28} strokeWidth={2.5} />
             </div>
 
             <div>
@@ -801,17 +815,17 @@ export default function OnboardingPage() {
 
       {/* ── STICKY THUMB-FRIENDLY BOTTOM ACTION BAR ──────────────────────── */}
       <footer className="fixed bottom-0 inset-x-0 z-40 border-t border-zinc-200/80 bg-white/95 backdrop-blur-md p-3.5 sm:static sm:bg-transparent sm:border-0 sm:p-0 sm:pb-8">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-          {step > 0 && step < 3 ? (
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-2.5">
+          {step > 0 && (
             <button
               type="button"
               onClick={() => setStep(step - 1)}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition"
+              className="flex min-h-[48px] items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-3.5 text-xs sm:text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 active:scale-[0.98] shrink-0"
+              aria-label="Previous step"
             >
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={16} />
+              <span>Back</span>
             </button>
-          ) : (
-            <div className="hidden sm:block" />
           )}
 
           {step === 0 && (
@@ -839,7 +853,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
+              className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
             >
               <span>Continue to Styling</span>
               <ArrowRight size={15} />
@@ -850,9 +864,8 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
+              className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98]"
             >
-              <Sparkles size={15} />
               <span>Preview My Live Page</span>
               <ArrowRight size={15} />
             </button>
@@ -863,7 +876,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={finish}
               disabled={saving}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50"
+              className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl bg-black px-6 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md transition hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50"
             >
               {saving ? (
                 <>
