@@ -208,28 +208,42 @@ export default function SocialLinksManager({ profile, updateProfile, isLinksPage
     <div className="py-5 border-t border-zinc-200">
       {/* Section Header */}
       <div className="flex flex-col gap-2 mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 whitespace-nowrap">
-              Social Accounts
-            </h2>
-            <span className="rounded-full bg-zinc-100 border border-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-700 whitespace-nowrap">
-              {localAccounts.length} {localAccounts.length === 1 ? 'account' : 'accounts'}
-            </span>
-            {!isGlobalVisible && (
-              <span className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700 whitespace-nowrap">
-                <EyeOff size={10} />
-                Hidden on profile
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 whitespace-nowrap">
+                Social Accounts
+              </h2>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-700 whitespace-nowrap">
+                {localAccounts.length} {localAccounts.length === 1 ? 'account' : 'accounts'}
               </span>
+              {!isGlobalVisible && (
+                <span className="flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700 whitespace-nowrap">
+                  <EyeOff size={10} />
+                  Hidden on profile
+                </span>
+              )}
+            </div>
+
+            {/* Mobile-only collapse chevron in the title row */}
+            {isLinksPage && (
+              <button
+                type="button"
+                onClick={() => setIsSectionCollapsed(true)}
+                className="flex sm:hidden h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-black transition shrink-0"
+                title="Collapse social accounts"
+              >
+                <ChevronUp size={14} />
+              </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
             {/* Global Visibility Toggle Button */}
             <button
               type="button"
               onClick={handleToggleGlobalVisibility}
-              className={`flex items-center gap-1.5 rounded-[8px] border px-3 py-1.5 text-xs font-bold transition shadow-xs whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-[8px] border px-2.5 sm:px-3 py-1.5 text-xs font-bold transition shadow-xs whitespace-nowrap ${
                 isGlobalVisible
                   ? 'border-zinc-200 bg-white text-zinc-700 hover:border-black hover:text-black'
                   : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
@@ -244,18 +258,18 @@ export default function SocialLinksManager({ profile, updateProfile, isLinksPage
             <button
               type="button"
               onClick={openAddModal}
-              className="flex items-center justify-center gap-1.5 rounded-[8px] bg-black px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-zinc-800 active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 rounded-[8px] bg-black px-3 sm:px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-zinc-800 active:scale-95 whitespace-nowrap"
             >
               <Plus size={13} />
               <span>Add social account</span>
             </button>
 
-            {/* Collapse Toggle on Links Page */}
+            {/* Desktop-only collapse chevron */}
             {isLinksPage && (
               <button
                 type="button"
                 onClick={() => setIsSectionCollapsed(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-black transition shrink-0"
+                className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-black transition shrink-0"
                 title="Collapse social accounts"
               >
                 <ChevronUp size={14} />

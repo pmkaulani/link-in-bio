@@ -10,7 +10,7 @@ import {
   Check,
   Sparkles,
   PartyPopper,
-  Globe,
+  QrCode,
   BarChart2,
   Clock,
   Layers,
@@ -585,7 +585,7 @@ export default function OnboardingPage() {
                   { icon: Smartphone, title: 'Visual 2-Way Builder', desc: 'Click phone elements to edit instantly' },
                   { icon: Layers, title: 'Rich Content Blocks', desc: 'Videos, images, callouts & post grids' },
                   { icon: Sparkles, title: 'Theme Studio', desc: 'Full custom palettes, fonts & motion' },
-                  { icon: Globe, title: 'Custom Domains', desc: 'Connect your own domain' },
+                  { icon: QrCode, title: 'QR Code Sharing', desc: 'Instant scannable code & direct link' },
                   { icon: BarChart2, title: 'Traffic Analytics', desc: 'Track referrers and visitor devices' },
                   { icon: Clock, title: 'Link Scheduling', desc: 'Timed drops and automated promo windows' },
                 ].map((feat) => {

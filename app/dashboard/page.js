@@ -4,7 +4,7 @@ import { useDashboard } from './DashboardContext';
 import BlockList from '../../components/blocks/BlockList';
 import QuestChecklist from '../../components/dashboard/QuestChecklist';
 import { setQuestFlag } from '../../lib/questFlags';
-import { Send, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Send, CheckCircle2, ExternalLink, Share2 } from 'lucide-react';
 
 export default function BlocksPage() {
   const {
@@ -18,6 +18,7 @@ export default function BlocksPage() {
     deleteBlock,
     toggleBlockVisibility,
     reorderBlocks,
+    openShareModal,
   } = useDashboard();
 
   const [posting, setPosting] = useState(false);
@@ -100,32 +101,44 @@ export default function BlocksPage() {
           </p>
         </div>
 
-        {/* Post Button — ONLY shown when there are draft changes to post */}
-        {(hasUnpostedChanges || posting || postedSuccess) && (
+        {/* Top Action Buttons (Share & Post) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handlePost}
-            disabled={posting}
-            className="flex shrink-0 items-center justify-center gap-2 rounded-[6px] bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60 animate-profile-in"
-            title="Publish your draft changes live"
+            type="button"
+            onClick={openShareModal}
+            className="flex items-center justify-center gap-1.5 rounded-[6px] border border-zinc-200 bg-white px-3.5 py-2 text-xs font-bold text-black transition hover:bg-zinc-100 hover:border-zinc-300 active:scale-95 shadow-xs"
+            title="Share your live page link"
           >
-            {posting ? (
-              <>
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Posting...
-              </>
-            ) : postedSuccess ? (
-              <>
-                <CheckCircle2 size={15} />
-                Posted Live!
-              </>
-            ) : (
-              <>
-                <Send size={14} />
-                Post changes
-              </>
-            )}
+            <Share2 size={13} className="text-black" />
+            <span>Share</span>
           </button>
-        )}
+
+          {(hasUnpostedChanges || posting || postedSuccess) && (
+            <button
+              onClick={handlePost}
+              disabled={posting}
+              className="flex shrink-0 items-center justify-center gap-2 rounded-[6px] bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-zinc-800 active:scale-95 disabled:opacity-60 animate-profile-in"
+              title="Publish your draft changes live"
+            >
+              {posting ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Posting...
+                </>
+              ) : postedSuccess ? (
+                <>
+                  <CheckCircle2 size={15} />
+                  Posted Live!
+                </>
+              ) : (
+                <>
+                  <Send size={14} />
+                  Post changes
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Success Notification Banner */}
@@ -135,16 +148,26 @@ export default function BlocksPage() {
             <CheckCircle2 size={16} className="text-black shrink-0" />
             <span>Your changes are posted live! ({visibleCount} {visibleCount === 1 ? 'link' : 'links'} active)</span>
           </div>
-          {profile?.username && (
-            <a
-              href={`/${profile.username}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-xs font-bold text-black underline"
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={openShareModal}
+              className="flex items-center gap-1 text-xs font-bold text-black underline hover:opacity-80"
             >
-              View live <ExternalLink size={11} />
-            </a>
-          )}
+              <Share2 size={12} />
+              Share
+            </button>
+            {profile?.username && (
+              <a
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-xs font-bold text-black underline"
+              >
+                View live <ExternalLink size={11} />
+              </a>
+            )}
+          </div>
         </div>
       )}
 

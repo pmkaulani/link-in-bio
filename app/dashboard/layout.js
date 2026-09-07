@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { supabase, isSupabaseConfigured, isLocalMode } from '../../lib/supabase';
 import { DashboardProvider, useDashboard } from './DashboardContext';
 import LivePreview from '../../components/editor/LivePreview';
-import { Link2, Palette, User, BarChart2, Settings, LogOut, Eye, ExternalLink, X, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Link2, Palette, User, BarChart2, Settings, LogOut, Eye, ExternalLink, X, AlertTriangle, ShieldAlert, Share2 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
+import ShareProfileModal from '../../components/dashboard/ShareProfileModal';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Links', icon: Link2 },
@@ -24,7 +25,14 @@ function PreviewPane() {
 function InnerLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, hasUnpostedChanges, publishChanges } = useDashboard();
+  const {
+    profile,
+    hasUnpostedChanges,
+    publishChanges,
+    shareModalOpen,
+    openShareModal,
+    closeShareModal,
+  } = useDashboard();
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [postingHeader, setPostingHeader] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -181,12 +189,23 @@ function InnerLayout({ children }) {
             <span>Preview</span>
           </button>
           {profile?.username && (
+            <button
+              type="button"
+              onClick={openShareModal}
+              className="flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 text-xs font-bold text-black transition active:scale-95 hover:bg-zinc-100 shadow-2xs"
+              title="Share your live page"
+            >
+              <Share2 size={12} className="shrink-0 text-black" />
+              <span>Share</span>
+            </button>
+          )}
+          {profile?.username && (
             <a
               href={`/${profile.username}`}
               target="_blank"
               rel="noreferrer"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition active:scale-95 hover:bg-zinc-100 hover:text-black shadow-2xs"
-              title="Open live page"
+              title="Open live page in new tab"
             >
               <ExternalLink size={13} />
             </a>
@@ -254,15 +273,25 @@ function InnerLayout({ children }) {
             </button>
           )}
           {profile?.username && (
-            <a
-              href={`/${profile.username}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center gap-2 rounded-[8px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 hover:text-black"
-            >
-              <ExternalLink size={13} className="text-zinc-600" />
-              <span>View live page</span>
-            </a>
+            <>
+              <button
+                type="button"
+                onClick={openShareModal}
+                className="flex items-center justify-center gap-2 rounded-[8px] bg-black px-3 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 active:scale-95 shadow-xs"
+              >
+                <Share2 size={13} />
+                <span>Share live link</span>
+              </button>
+              <a
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-[8px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 hover:text-black"
+              >
+                <ExternalLink size={13} className="text-zinc-600" />
+                <span>View live page</span>
+              </a>
+            </>
           )}
           <button
             onClick={handleLogout}
@@ -347,6 +376,13 @@ function InnerLayout({ children }) {
           </div>
         </div>
       )}
+
+      {/* Live Share Profile Modal */}
+      <ShareProfileModal
+        profile={profile}
+        isOpen={shareModalOpen}
+        onClose={closeShareModal}
+      />
     </div>
   );
 }

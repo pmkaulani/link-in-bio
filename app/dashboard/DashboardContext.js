@@ -98,6 +98,9 @@ export function DashboardProvider({ children }) {
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   const [saveErrorMsg, setSaveErrorMsg] = useState('');
   const [selectedBlockId, setSelectedBlockId] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const openShareModal = useCallback(() => setShareModalOpen(true), []);
+  const closeShareModal = useCallback(() => setShareModalOpen(false), []);
   const saveTimeoutRef = useRef(null);
 
   const markSaved = useCallback(() => {
@@ -453,6 +456,10 @@ export function DashboardProvider({ children }) {
         reorderBlocks,
         updateProfile,
         load,
+        shareModalOpen,
+        setShareModalOpen,
+        openShareModal,
+        closeShareModal,
       }}
     >
       {children}
