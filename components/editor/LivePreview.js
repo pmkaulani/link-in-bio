@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useContext } from 'react';
 import {
   ExternalLink,
   Share2,
@@ -16,7 +16,7 @@ import { safeColor, safeBackgroundUrl, resolvePageTextColor } from '../../lib/pu
 import BackgroundEffects from '../themes/BackgroundEffects';
 import BrandLogo from '../BrandLogo';
 import SocialIcon from '../ui/SocialIcon';
-import { useDashboard } from '../../app/dashboard/DashboardContext';
+import { DashboardContext } from '../../app/dashboard/DashboardContext';
 import { normalizeSocialAccounts, groupAccountsByPlatform, getBalancedSocialRows } from '../../lib/socialAccounts';
 
 const FONT_MAP = {
@@ -302,8 +302,12 @@ const RENDERERS = {
   socials_bar: PreviewSocialsBar,
 };
 
-export default function LivePreview({ profile, blocks }) {
-  const { selectedBlockId, setSelectedBlockId, saveStatus, saveErrorMsg } = useDashboard();
+export default function LivePreview({ profile, blocks, readOnly = false }) {
+  const dashCtx = useContext(DashboardContext);
+  const selectedBlockId = dashCtx?.selectedBlockId || null;
+  const setSelectedBlockId = dashCtx?.setSelectedBlockId || (() => {});
+  const saveStatus = dashCtx?.saveStatus || null;
+  const saveErrorMsg = dashCtx?.saveErrorMsg || '';
   const [copied, setCopied] = useState(false);
 
   const primary = safeColor(profile?.primary_color, '#000000');
@@ -385,9 +389,11 @@ export default function LivePreview({ profile, blocks }) {
       </div>
 
       {/* Visual Editor Hint */}
-      <p className="text-[11px] font-medium text-zinc-400 select-none">
-        Click any element on the preview to edit it directly
-      </p>
+      {!readOnly && (
+        <p className="text-[11px] font-medium text-zinc-400 select-none">
+          Click any element on the preview to edit it directly
+        </p>
+      )}
 
       {/* Phone Frame */}
       <div className="relative w-[320px] sm:w-[340px] overflow-hidden rounded-[3rem] border-[9px] border-[#18181B] bg-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] ring-1 ring-black/10 transition-all duration-300">
@@ -487,11 +493,11 @@ export default function LivePreview({ profile, blocks }) {
                 return (
                   <div
                     key={block.id}
-                    onClick={() => setSelectedBlockId(block.id)}
-                    className={`cursor-pointer transition-all duration-200 rounded-2xl relative ${
-                      isSelected
+                    onClick={() => !readOnly && setSelectedBlockId(block.id)}
+                    className={`${readOnly ? '' : 'cursor-pointer hover:scale-[1.01]'} transition-all duration-200 rounded-2xl relative ${
+                      !readOnly && isSelected
                         ? 'ring-2 ring-black ring-offset-2 ring-offset-black/20 scale-[1.02] shadow-pop'
-                        : 'hover:scale-[1.01]'
+                        : ''
                     }`}
                   >
                     <Renderer

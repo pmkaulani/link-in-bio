@@ -2,12 +2,16 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase.js';
 
-const DashboardContext = createContext(null);
+export const DashboardContext = createContext(null);
 
 export function useDashboard() {
   const ctx = useContext(DashboardContext);
   if (!ctx) throw new Error('useDashboard must be used inside DashboardProvider');
   return ctx;
+}
+
+export function useOptionalDashboard() {
+  return useContext(DashboardContext);
 }
 
 // Default block data for each type (Link, Heading, Text, Image, Video, Grid, Divider, Spacer, Callout, Socials)
