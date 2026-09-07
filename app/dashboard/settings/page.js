@@ -57,6 +57,7 @@ export default function SettingsPage() {
   const [is2FAEnabled, setIs2FAEnabled] = useState(Boolean(profile?.two_factor_enabled));
   const [sessions, setSessions] = useState([]);
   const [authProviders, setAuthProviders] = useState([]);
+  const [userMetadata, setUserMetadata] = useState({});
 
   // Privacy tab states
   const [isPrivate, setIsPrivate] = useState(Boolean(profile?.is_private));
@@ -88,6 +89,7 @@ export default function SettingsPage() {
         if (!emailInput && user.email) setEmailInput(user.email);
         const providers = user.app_metadata?.providers || (user.app_metadata?.provider ? [user.app_metadata.provider] : []);
         setAuthProviders(providers);
+        setUserMetadata(user.user_metadata || {});
       }
     });
 
@@ -286,7 +288,9 @@ export default function SettingsPage() {
       return;
     }
 
-    const hasPasswordSet = profile?.socials?._password_set === true;
+    const hasPasswordSet =
+      userMetadata?.password_set === true ||
+      profile?.socials?._password_set === true;
 
     setLoading(true);
     try {
@@ -819,7 +823,9 @@ export default function SettingsPage() {
         <div className="space-y-6 animate-profile-in">
           {/* Change Password Card */}
           {(() => {
-            const hasPasswordSet = profile?.socials?._password_set === true;
+            const hasPasswordSet =
+              userMetadata?.password_set === true ||
+              profile?.socials?._password_set === true;
             return (
               <form onSubmit={handleChangePassword} className="py-6 border-t border-zinc-200 space-y-4">
                 <div>

@@ -57,9 +57,29 @@ export async function POST(req) {
       }
 
       if (!isLocalMode) {
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        const { error } = await supabase.auth.updateUser({
+          password: newPassword,
+          data: { password_set: true },
+        });
         if (error) throw error;
       }
+
+      // Also persist _password_set: true in database profiles table
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('socials')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const updatedSocials = {
+        ...(currentProfile?.socials || {}),
+        _password_set: true,
+      };
+
+      await supabase
+        .from('profiles')
+        .update({ socials: updatedSocials })
+        .eq('id', userId);
 
       return NextResponse.json({ success: true, message: 'Password updated successfully.' });
     }

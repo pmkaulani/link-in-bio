@@ -300,8 +300,8 @@ function InnerLayout({ children }) {
 
       {/* Mobile Floating Tab Bar */}
       <nav
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
-        className="fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-zinc-200 bg-white/90 p-1.5 shadow-[0_16px_45px_-10px_rgba(0,0,0,0.18)] backdrop-blur-2xl ring-1 ring-black/5 sm:hidden max-w-[94vw]"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)' }}
+        className="fixed left-1/2 z-40 flex -translate-x-1/2 items-center justify-between w-[calc(100%-2rem)] max-w-md rounded-full border border-zinc-200/90 bg-white/95 p-1.5 shadow-[0_16px_45px_-10px_rgba(0,0,0,0.18)] backdrop-blur-2xl ring-1 ring-black/5 sm:hidden"
       >
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
@@ -309,14 +309,16 @@ function InnerLayout({ children }) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-1.5 rounded-full transition-all duration-200 active:scale-95 ${
+              title={label}
+              aria-label={label}
+              className={`flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 ${
                 active
-                  ? 'bg-black px-3.5 py-2 text-xs font-bold text-white shadow-sm'
-                  : 'p-2.5 text-zinc-500 hover:bg-zinc-100 hover:text-black'
+                  ? 'flex-initial bg-black px-4 py-2.5 text-white shadow-sm gap-1.5 min-w-[76px]'
+                  : 'flex-1 py-2.5 text-zinc-500 hover:bg-zinc-100/80 hover:text-black min-h-[42px]'
               }`}
             >
-              <Icon size={16} strokeWidth={active ? 2.5 : 2} />
-              {active && <span className="text-xs font-bold">{label}</span>}
+              <Icon size={17} strokeWidth={active ? 2.5 : 2} className="shrink-0" />
+              {active && <span className="text-[11px] sm:text-xs font-bold truncate max-w-[85px] sm:max-w-none">{label}</span>}
             </Link>
           );
         })}
