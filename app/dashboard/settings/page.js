@@ -488,7 +488,23 @@ export default function SettingsPage() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Deletion failed.');
 
-      router.push('/');
+      // Wipe all cached auth tokens so no stale session survives after deletion
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            key.startsWith('sb-') ||
+            key.includes('supabase') ||
+            key.includes('gotrue') ||
+            key === 'local_supabase_db' ||
+            key === 'linkinbio_local_session'
+          ) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
+
+      // Hard navigation to fully destroy React tree + in-memory state
+      window.location.href = '/login?deleted=1';
     } catch (err) {
       showToast(err.message || 'Failed to delete account.', 'error');
       setLoading(false);

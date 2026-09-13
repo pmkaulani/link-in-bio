@@ -138,10 +138,37 @@ export default function AuthCallbackPage() {
             },
           });
 
-          if (!err || err.code === '23505') {
+          if (!err) {
             profileCreated = true;
             break;
           }
+
+          // If a profile with this user ID already exists (e.g. from a partially-failed
+          // account deletion), fetch it and route based on its actual state instead of
+          // silently treating the conflict as a fresh creation.
+          if (err.code === '23505') {
+            const { data: existingAfterConflict } = await supabase
+              .from('profiles')
+              .select('id, onboarded, socials')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (existingAfterConflict) {
+              const hasPasswordSet = existingAfterConflict?.socials?._password_set === true;
+              const promptDismissed = existingAfterConflict?.socials?._password_prompt_dismissed === true;
+
+              if (isGoogleAuth && !hasPasswordSet && !promptDismissed) {
+                router.push('/set-password');
+                return;
+              }
+
+              router.push(existingAfterConflict.onboarded ? '/dashboard' : '/onboarding');
+              return;
+            }
+            // If the conflict was on username (not id), try a different username
+            profileCreated = false;
+          }
+
           username = `${base}${Math.floor(1000 + Math.random() * 9000)}`;
         }
 

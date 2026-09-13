@@ -270,7 +270,8 @@ export default function OnboardingPage() {
         if (isSupabaseConfigured) {
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({
+            .upsert({
+              id: activeUserId,
               username: username || 'user',
               display_name: displayName || username || 'Creator',
               bio,
@@ -284,8 +285,7 @@ export default function OnboardingPage() {
               button_radius: theme.button_radius ?? (selectedLook === 'retro' ? 8 : 24),
               font_family: theme.font_family || 'inter',
               onboarded: true,
-            })
-            .eq('id', activeUserId);
+            }, { onConflict: 'id' });
 
           if (updateError) {
             console.error('Onboarding profile update failed:', updateError);
@@ -305,27 +305,28 @@ export default function OnboardingPage() {
             };
             const card = LOOK_CARD[selectedLook] || LOOK_CARD.minimal;
 
-            await Promise.all(
-              Object.entries(selectedSocials).map(([icon, url], i) => {
-                const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
-                return supabase.from('blocks').insert({
-                  profile_id: activeUserId,
-                  type: 'link',
-                  position: i,
-                  data: {
-                    title: meta?.title || icon,
-                    icon,
-                    url,
-                    animation: 'slideUp',
-                    hover_effect: hoverEffect,
-                    background_type: 'solid',
-                    background_value: card.bg,
-                    text_color: card.text,
-                    is_featured: false,
-                  },
-                });
-              })
-            );
+            // Single batch insert to avoid 409 race conditions from parallel individual inserts
+            const blockRows = Object.entries(selectedSocials).map(([icon, url], i) => {
+              const meta = QUICK_SOCIALS.find((s) => s.icon === icon);
+              return {
+                profile_id: activeUserId,
+                type: 'link',
+                position: i,
+                data: {
+                  title: meta?.title || icon,
+                  icon,
+                  url,
+                  animation: 'slideUp',
+                  hover_effect: hoverEffect,
+                  background_type: 'solid',
+                  background_value: card.bg,
+                  text_color: card.text,
+                  is_featured: false,
+                },
+              };
+            });
+
+            await supabase.from('blocks').insert(blockRows);
           }
         } else {
           // Local demo mode save

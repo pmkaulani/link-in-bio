@@ -21,7 +21,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const justLoggedOut = params.get('logout') === '1';
+    const justLoggedOut = params.get('logout') === '1' || params.get('deleted') === '1';
 
     // If the user explicitly logged out, wipe any residual tokens so Supabase
     // cannot restore the old session, and do NOT redirect them to dashboard.
