@@ -108,7 +108,7 @@ function getBackground(profile) {
 // ── 1. About Account Modal (Truthful metadata) ───────────────────────────────
 
 function AboutAccountModal({ profile, isOpen, onClose }) {
-  if (!isOpen) return null;
+  if (!isOpen || !profile) return null;
 
   const joinDate = profile.created_at ? new Date(profile.created_at) : new Date();
   const formattedMonthYear = joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });

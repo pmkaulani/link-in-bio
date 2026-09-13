@@ -64,11 +64,12 @@ export default function InteractiveTheme({ profile, links }) {
     [links]
   );
 
+  const p = profile || {};
   const activeLink = visibleLinks.find((link) => link.id === hoveredId) || null;
-  const primary = safeColor(profile.primary_color, '#7c3aed');
-  const text = safeColor(profile.text_color, '#ffffff');
-  const font = FONT_MAP[profile.font_family] || FONT_MAP.inter;
-  const buttonRadius = Number.isInteger(profile.button_radius) ? profile.button_radius : 18;
+  const primary = safeColor(p.primary_color, '#7c3aed');
+  const text = safeColor(p.text_color, '#ffffff');
+  const font = FONT_MAP[p.font_family] || FONT_MAP.inter;
+  const buttonRadius = Number.isInteger(p.button_radius) ? p.button_radius : 18;
 
   function handleMove(event) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -93,32 +94,32 @@ export default function InteractiveTheme({ profile, links }) {
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[460px] flex-col items-center">
-        {profile.avatar_url ? (
+        {p.avatar_url ? (
           <img
-            src={profile.avatar_url}
-            alt={profile.display_name || profile.username}
+            src={p.avatar_url}
+            alt={p.display_name || p.username}
             className="mb-4 h-24 w-24 rounded-full border-4 border-white/80 object-cover shadow-2xl animate-profile-in"
           />
         ) : (
           <div
             className="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white/80 bg-white/15 text-2xl font-bold shadow-2xl backdrop-blur"
           >
-            {(profile.display_name || profile.username || '?').slice(0, 2).toUpperCase()}
+            {(p.display_name || p.username || '?').slice(0, 2).toUpperCase()}
           </div>
         )}
 
         <h1 className="animate-profile-in text-center text-2xl font-extrabold tracking-tight sm:text-3xl">
-          {profile.display_name || profile.username}
+          {p.display_name || p.username}
         </h1>
-        <p className="animate-profile-in mt-1 text-sm opacity-75">@{profile.username}</p>
+        <p className="animate-profile-in mt-1 text-sm opacity-75">@{p.username}</p>
 
-        {profile.bio && (
+        {p.bio && (
           <p className="animate-profile-in mt-4 max-w-[340px] text-center text-sm leading-6 opacity-85">
-            {profile.bio}
+            {p.bio}
           </p>
         )}
 
-        {profile.socials && typeof profile.socials === 'object' && (
+        {p.socials && typeof p.socials === 'object' && (
           <div className="animate-profile-in mt-5 flex flex-wrap justify-center gap-2">
             {Object.entries(profile.socials)
               .filter(([, url]) => Boolean(url))
