@@ -488,6 +488,11 @@ export default function SettingsPage() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Deletion failed.');
 
+      // Sign out the client session
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (_) {}
+
       // Wipe all cached auth tokens so no stale session survives after deletion
       try {
         Object.keys(localStorage).forEach((key) => {

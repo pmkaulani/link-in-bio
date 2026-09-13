@@ -124,14 +124,32 @@ export default function OnboardingPage() {
       return;
     }
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data?.session) {
-        router.push('/login');
+    // Verify user actually exists in Supabase Auth (not a stale session of a deleted user)
+    supabase.auth.getUser().then(async ({ data: userData, error: userError }) => {
+      const user = userData?.user;
+      if (userError || !user) {
+        // User was deleted or session is invalid! Purge tokens and exit to login
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+          Object.keys(localStorage).forEach((key) => {
+            if (
+              key.startsWith('sb-') ||
+              key.includes('supabase') ||
+              key.includes('gotrue') ||
+              key === 'local_supabase_db' ||
+              key === 'linkinbio_local_session'
+            ) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (_) {}
+        window.location.href = '/login?deleted=1';
         return;
       }
-      setUserId(data.session.user.id);
-      const uMeta = data.session.user.user_metadata || {};
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).maybeSingle();
+
+      setUserId(user.id);
+      const uMeta = user.user_metadata || {};
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (p) {
         if (p.onboarded) {
           router.push('/dashboard');
@@ -289,6 +307,25 @@ export default function OnboardingPage() {
 
           if (updateError) {
             console.error('Onboarding profile update failed:', updateError);
+            if (updateError.code === '23503') {
+              // Foreign key violation: user does not exist in auth.users (deleted account)
+              try {
+                await supabase.auth.signOut({ scope: 'local' });
+                Object.keys(localStorage).forEach((key) => {
+                  if (
+                    key.startsWith('sb-') ||
+                    key.includes('supabase') ||
+                    key.includes('gotrue') ||
+                    key === 'local_supabase_db' ||
+                    key === 'linkinbio_local_session'
+                  ) {
+                    localStorage.removeItem(key);
+                  }
+                });
+              } catch (_) {}
+              window.location.href = '/login?deleted=1';
+              return;
+            }
             setSaving(false);
             return;
           }
@@ -442,7 +479,23 @@ export default function OnboardingPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => router.push('/login')}
+                onClick={async () => {
+                  try {
+                    await supabase.auth.signOut({ scope: 'local' });
+                    Object.keys(localStorage).forEach((key) => {
+                      if (
+                        key.startsWith('sb-') ||
+                        key.includes('supabase') ||
+                        key.includes('gotrue') ||
+                        key === 'local_supabase_db' ||
+                        key === 'linkinbio_local_session'
+                      ) {
+                        localStorage.removeItem(key);
+                      }
+                    });
+                  } catch (_) {}
+                  window.location.href = '/login?logout=1';
+                }}
                 className="flex items-center gap-1.5 py-1 px-1.5 rounded-lg text-zinc-400 hover:text-black transition"
                 title="Exit to login"
               >

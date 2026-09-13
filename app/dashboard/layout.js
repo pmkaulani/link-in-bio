@@ -384,16 +384,31 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     async function init() {
       try {
-        const { data } = await supabase.auth.getSession();
-        if (!data?.session) {
-          router.push('/login');
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        const user = userData?.user;
+        if (userError || !user) {
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+            Object.keys(localStorage).forEach((key) => {
+              if (
+                key.startsWith('sb-') ||
+                key.includes('supabase') ||
+                key.includes('gotrue') ||
+                key === 'local_supabase_db' ||
+                key === 'linkinbio_local_session'
+              ) {
+                localStorage.removeItem(key);
+              }
+            });
+          } catch (_) {}
+          router.push('/login?deleted=1');
           return;
         }
 
         const { data: p } = await supabase
           .from('profiles')
           .select('onboarded')
-          .eq('id', data.session.user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         if (!p || p.onboarded === false) {

@@ -42,10 +42,29 @@ export default function LoginPage() {
       return; // stay on login page — don't auto-redirect
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (data?.session) {
-        router.push('/dashboard');
+    if (!isSupabaseConfigured) return;
+
+    supabase.auth.getUser().then(async ({ data, error }) => {
+      if (error || !data?.user) {
+        // Ghost session or deleted user: clear storage and remain on login page
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+          Object.keys(localStorage).forEach((key) => {
+            if (
+              key.startsWith('sb-') ||
+              key.includes('supabase') ||
+              key.includes('gotrue') ||
+              key === 'local_supabase_db' ||
+              key === 'linkinbio_local_session'
+            ) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (_) {}
+        return;
       }
+
+      router.push('/dashboard');
     });
   }, [router]);
 

@@ -59,10 +59,29 @@ function SignupForm() {
   const [transitionStep, setTransitionStep] = useState(0);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data?.session) {
-        router.push('/dashboard');
+    if (!isSupabaseConfigured) return;
+
+    supabase.auth.getUser().then(async ({ data, error }) => {
+      if (error || !data?.user) {
+        // Stale or deleted user session: clear tokens so user can sign up cleanly
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+          Object.keys(localStorage).forEach((key) => {
+            if (
+              key.startsWith('sb-') ||
+              key.includes('supabase') ||
+              key.includes('gotrue') ||
+              key === 'local_supabase_db' ||
+              key === 'linkinbio_local_session'
+            ) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (_) {}
+        return;
       }
+
+      router.push('/dashboard');
     });
   }, [router]);
 
