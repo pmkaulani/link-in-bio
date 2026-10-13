@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboard } from '../DashboardContext';
+import { setQuestFlag } from '../../../lib/questFlags';
 import {
   THEME_PRESETS,
   FONT_OPTIONS,
@@ -21,6 +22,10 @@ export default function ThemePage() {
   const [activeTab, setActiveTab] = useState('themes'); // 'themes' | 'typography' | 'buttons' | 'background' | 'animations'
   const [posting, setPosting] = useState(false);
   const [postedSuccess, setPostedSuccess] = useState(false);
+
+  useEffect(() => {
+    setQuestFlag('customize_style');
+  }, []);
 
   async function handlePost() {
     setPosting(true);

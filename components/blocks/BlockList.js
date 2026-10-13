@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -46,6 +46,14 @@ const BLOCK_TYPES = [
 export default function BlockList({ blocks, onAdd, onUpdate, onDelete, onToggleVisibility, onReorder }) {
   const { selectedBlockId, setSelectedBlockId } = useDashboard();
   const [addModalOpen, setAddModalOpen] = useState(false);
+
+  useEffect(() => {
+    function handleOpenAddModal() {
+      setAddModalOpen(true);
+    }
+    window.addEventListener('open-add-block-modal', handleOpenAddModal);
+    return () => window.removeEventListener('open-add-block-modal', handleOpenAddModal);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

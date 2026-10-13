@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useDashboard } from './DashboardContext';
 import BlockList from '../../components/blocks/BlockList';
-import QuestChecklist from '../../components/dashboard/QuestChecklist';
 import { setQuestFlag } from '../../lib/questFlags';
 import { Send, CheckCircle2, ExternalLink, Share2 } from 'lucide-react';
 
@@ -72,13 +71,6 @@ export default function BlocksPage() {
 
   return (
     <div className="text-black">
-      {/* Onboarding Quest Checklist */}
-      <QuestChecklist
-        profile={profile}
-        blocks={blocks}
-        hasUnpostedChanges={hasUnpostedChanges}
-      />
-
       {/* Header bar with Post button */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
