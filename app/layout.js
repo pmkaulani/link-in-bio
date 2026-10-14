@@ -39,6 +39,10 @@ export const metadata = {
   publisher: 'LinkInBio',
   applicationName: 'LinkInBio',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.svg',
+  },
   alternates: {
     canonical: siteUrl,
   },
